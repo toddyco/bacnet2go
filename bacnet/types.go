@@ -1,4 +1,4 @@
-//Package baetyl-bacnet provides various types to represent Bacnet related concepts
+// Package baetyl-bacnet provides various types to represent Bacnet related concepts
 package bacnet
 
 import (
@@ -14,10 +14,10 @@ const (
 	maxObjectType = 0x400
 )
 
-//ObjectType is the category of an object
+// ObjectType is the category of an object
 type ObjectType uint16
 
-//ObjectInstance is a unique identifier of an baetyl-bacnet object
+// ObjectInstance is a unique identifier of an baetyl-bacnet object
 type ObjectInstance uint32
 
 //go:generate stringer -type=ObjectType
@@ -83,14 +83,14 @@ const (
 	Proprietarymax        ObjectType = 0x3ff
 )
 
-//ObjectID represent the type of a baetyl-bacnet object and it's instance number
+// ObjectID represent the type of a baetyl-bacnet object and it's instance number
 type ObjectID struct {
 	Type     ObjectType
 	Instance ObjectInstance
 }
 
-//Encode turns the object ID into a uint32 for encoding.  Returns an
-//error if the ObjectID is invalid
+// Encode turns the object ID into a uint32 for encoding.  Returns an
+// error if the ObjectID is invalid
 func (o ObjectID) Encode() (uint32, error) {
 	if o.Instance > MaxInstance {
 		return 0, errors.New("invalid ObjectID: instance too high")
@@ -109,8 +109,8 @@ func ObjectIDFromUint32(v uint32) ObjectID {
 	}
 }
 
-//Device represent a baetyl-bacnet device. Note: A baetyl-bacnet device is different
-//from a baetyl-bacnet object. A device "contains" several object. Only the device has a baetyl-bacnet address
+// Device represent a baetyl-bacnet device. Note: A baetyl-bacnet device is different
+// from a baetyl-bacnet object. A device "contains" several object. Only the device has a baetyl-bacnet address
 type Device struct {
 	ID           ObjectID
 	MaxApdu      uint32
@@ -119,7 +119,7 @@ type Device struct {
 	Addr         Address
 }
 
-//Address is the baetyl-bacnet address of an device.
+// Address is the baetyl-bacnet address of an device.
 type Address struct {
 	// mac_len = 0 is a broadcast address
 	// note: MAC for IP addresses uses 4 bytes for addr, 2 bytes for port
@@ -157,11 +157,11 @@ const (
 	SegmentationSupportNone     SegmentationSupport = 0x03
 )
 
-//PropertyIdentifier is used to control a ReadProperty request
+// PropertyIdentifier is used to control a ReadProperty request
 type PropertyIdentifier struct {
 	Type PropertyType
-	//Not null if it's an array property and we want only one index of
-	//this array
+	// Not null if it's an array property and we want only one index of
+	// this array
 	ArrayIndex *uint32
 }
 

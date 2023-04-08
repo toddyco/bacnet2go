@@ -87,7 +87,7 @@ func TestValidAppData(t *testing.T) {
 				}
 
 			}
-			//Ensure that it work when passed an empty interface
+			// Ensure that it work when passed an empty interface
 			var v interface{}
 			decoder = NewDecoder(b)
 			decoder.AppData(&v, nil)

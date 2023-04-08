@@ -1,10 +1,11 @@
-package bacip
+package bacnet_ip
 
 import (
+	"github.com/toddyco/bacnet2go/bacnet_ip/services"
 	"testing"
 
-	"github.com/toddyco/bacnet2go/bacnet"
 	"github.com/matryer/is"
+	"github.com/toddyco/bacnet2go/bacnet"
 )
 
 func TestFullEncodingAndCoherency(t *testing.T) {
@@ -24,12 +25,12 @@ func TestFullEncodingAndCoherency(t *testing.T) {
 					APDU: &APDU{
 						DataType:    UnconfirmedServiceRequest,
 						ServiceType: ServiceUnconfirmedWhoIs,
-						Payload: &ReadProperty{
+						Payload: &services.ReadProperty{
 							ObjectID: bacnet.ObjectID{
 								Type:     bacnet.AnalogInput,
 								Instance: 300184,
 							},
-							Property: bacnet.PropertyIdentifier{
+							PropertyID: bacnet.PropertyIdentifier{
 								Type: bacnet.PresentValue,
 							},
 						},
@@ -56,7 +57,7 @@ func TestFullEncodingAndCoherency(t *testing.T) {
 					APDU: &APDU{
 						DataType:    UnconfirmedServiceRequest,
 						ServiceType: ServiceUnconfirmedIAm,
-						Payload: &Iam{
+						Payload: &services.Iam{
 							ObjectID: bacnet.ObjectID{
 								Type:     8,
 								Instance: 30185,

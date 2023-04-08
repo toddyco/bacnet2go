@@ -1,4 +1,4 @@
-package bacip
+package bacnet_ip
 
 import (
 	"context"
@@ -18,7 +18,7 @@ type Transactions struct {
 func NewTransactions() *Transactions {
 	t := Transactions{
 		currents:     map[byte]Tx{},
-		freeInvokeID: make(chan byte, 256), //The chan should be able to handle all possible values
+		freeInvokeID: make(chan byte, 256), // The chan should be able to handle all possible values
 	}
 	for x := 0; x < 256; x++ {
 		t.freeInvokeID <- byte(x)
@@ -26,20 +26,20 @@ func NewTransactions() *Transactions {
 	return &t
 }
 
-//GetID returns a free InvokeID to use fr a Confirmed service
-//request. Blocks until such ID is available
+// GetID returns a free InvokeID to use fr a Confirmed service
+// request. Blocks until such ID is available
 func (t *Transactions) GetID() byte {
 	return <-t.freeInvokeID
 }
 
-//FreeID puts back the id in the pool of available invoke ID
+// FreeID puts back the id in the pool of available invoke ID
 func (t *Transactions) FreeID(id byte) {
 	t.freeInvokeID <- id
 }
 
-//nolint: revive
-//SetTransaction set up the channel passed as parameter as a callback for the baetyl-bacnet response.
-//All call to SetTransaction must be followed by a StopTransaction to prevent leaks
+// nolint: revive
+// SetTransaction set up the channel passed as parameter as a callback for the baetyl-bacnet response.
+// All call to SetTransaction must be followed by a StopTransaction to prevent leaks
 func (t *Transactions) SetTransaction(id byte, apdu chan<- APDU, ctx context.Context) {
 	t.Lock()
 	defer t.Unlock()

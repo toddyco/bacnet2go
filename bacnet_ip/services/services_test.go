@@ -1,4 +1,4 @@
-package bacip
+package services
 
 import (
     "encoding/hex"
@@ -78,7 +78,7 @@ func TestWhoIsCoherency(t *testing.T) {
 func TestIamEncodingAndCoherency(t *testing.T) {
 	ttc := []struct {
 		data string //hex string
-		iam  Iam
+		iam Iam
 	}{
 		{
 			data: "c4020075e92205c4910022016c",
@@ -111,7 +111,7 @@ func TestIamEncodingAndCoherency(t *testing.T) {
 func TestReadPropertyReq(t *testing.T) {
 	ttc := []struct {
 		data string //hex string
-		rp   ReadProperty
+		rp ReadProperty
 	}{
 		{
 			data: "0c00401fb91975",
@@ -120,7 +120,7 @@ func TestReadPropertyReq(t *testing.T) {
 					Type:     bacnet.AnalogOutput,
 					Instance: 8121,
 				},
-				Property: bacnet.PropertyIdentifier{
+				PropertyID: bacnet.PropertyIdentifier{
 					Type: bacnet.Units,
 				},
 			},
@@ -139,7 +139,7 @@ func TestReadPropertyReq(t *testing.T) {
 func TestReadPropertyResp(t *testing.T) {
 	ttc := []struct {
 		data string //hex string
-		rp   ReadProperty
+		rp ReadProperty
 	}{
 		{
 			data: "0c00401fb919753e91623f",
@@ -148,7 +148,7 @@ func TestReadPropertyResp(t *testing.T) {
 					Type:     bacnet.AnalogOutput,
 					Instance: 8121,
 				},
-				Property: bacnet.PropertyIdentifier{
+				PropertyID: bacnet.PropertyIdentifier{
 					Type: bacnet.Units,
 				},
 				Data: uint32(98),

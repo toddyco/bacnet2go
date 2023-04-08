@@ -12,7 +12,7 @@ import (
 
 func TestValidTag(t *testing.T) {
 	ttc := []struct {
-		data     string //hex string
+		data     string // hex string
 		expected tag
 	}{
 		{

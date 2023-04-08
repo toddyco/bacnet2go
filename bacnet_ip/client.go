@@ -1,11 +1,12 @@
-//Package bacip implements a Bacnet/IP client
-package bacip
+// Package bacip implements a Bacnet/IP client
+package bacnet_ip
 
 import (
 	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/toddyco/bacnet2go/bacnet_ip/services"
 	"net"
 	"sync"
 	"time"
@@ -14,8 +15,8 @@ import (
 )
 
 type Client struct {
-	//Maybe change to baetyl-bacnet address
-	ipAdress         net.IP
+	// Maybe change to baetyl-bacnet address
+	ipAddress        net.IP
 	broadcastAddress net.IP
 	udpPort          int
 	udp              *net.UDPConn
@@ -50,9 +51,9 @@ func broadcastAddr(n *net.IPNet) (net.IP, error) {
 	return ip, nil
 }
 
-//NewClient creates a new baetyl-bacnet client. It binds on the given port
-//and network interface (eth0 for example). If Port if 0, the default
-//baetyl-bacnet port is used
+// NewClient creates a new baetyl-bacnet client. It binds on the given port
+// and network interface (eth0 for example). If Port if 0, the default
+// baetyl-bacnet port is used
 func NewClient(netInterface string, port int) (*Client, error) {
 	c := &Client{subscriptions: &Subscriptions{}, transactions: NewTransactions(), Logger: NoOpLogger{}}
 	i, err := net.InterfaceByName(netInterface)
@@ -81,12 +82,12 @@ func NewClient(netInterface string, port int) (*Client, error) {
 			if err != nil {
 				return nil, err
 			}
-			c.ipAdress = ip.To4()
+			c.ipAddress = ip.To4()
 			c.broadcastAddress = broadcast
 			break
 		}
 	}
-	if c.ipAdress == nil {
+	if c.ipAddress == nil {
 		return nil, fmt.Errorf("no IPv4 address assigned to interface %s", netInterface)
 	}
 
@@ -108,7 +109,7 @@ func NewClientByIp(ip string, port int) (*Client, error) {
 		port = DefaultUDPPort
 	}
 	c.udpPort = port
-	c.ipAdress = net.ParseIP(ip)
+	c.ipAddress = net.ParseIP(ip)
 
 	addr, err := net.InterfaceAddrs()
 	if err != nil {
@@ -116,7 +117,7 @@ func NewClientByIp(ip string, port int) (*Client, error) {
 	}
 	for _, ad := range addr {
 		if ipNet, ok := ad.(*net.IPNet); ok {
-			if ipNet.Contains(c.ipAdress) {
+			if ipNet.Contains(c.ipAddress) {
 				broadcast, err := broadcastAddr(ipNet)
 				if err != nil {
 					return nil, err
@@ -144,7 +145,7 @@ func NewClientByIp(ip string, port int) (*Client, error) {
 
 // listen for incoming baetyl-bacnet packets.
 func (c *Client) listen() {
-	//Todo: allow close client
+	// Todo: allow close client
 	for {
 		b := make([]byte, 2048)
 		i, addr, err := c.udp.ReadFromUDP(b)
@@ -178,7 +179,7 @@ func (c *Client) handleMessage(src *net.UDPAddr, b []byte) error {
 	}
 	c.subscriptions.RLock()
 	if c.subscriptions.f != nil {
-		//If f block, there is a deadlock here
+		// If f block, there is a deadlock here
 		c.subscriptions.f(bvlc, *src)
 	}
 	c.subscriptions.RUnlock()
@@ -212,7 +213,7 @@ func (c *Client) IAm() error {
 		APDU: &APDU{
 			DataType:    UnconfirmedServiceRequest,
 			ServiceType: ServiceUnconfirmedIAm,
-			Payload: &Iam{
+			Payload: &services.Iam{
 				ObjectID: bacnet.ObjectID{
 					Type:     bacnet.BacnetDevice,
 					Instance: 99999,
@@ -230,7 +231,7 @@ func (c *Client) IAm() error {
 	return err
 }
 
-func (c *Client) WhoIs(data WhoIs, timeout time.Duration) ([]bacnet.Device, error) {
+func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]bacnet.Device, error) {
 	npdu := NPDU{
 		Version:               Version1,
 		IsNetworkLayerMessage: false,
@@ -253,7 +254,7 @@ func (c *Client) WhoIs(data WhoIs, timeout time.Duration) ([]bacnet.Device, erro
 		src  net.UDPAddr
 	})
 	c.subscriptions.Lock()
-	//TODO:  add errgroup ?, ensure all f are done and not blocked
+	// TODO:  add errgroup ?, ensure all f are done and not blocked
 	c.subscriptions.f = func(bvlc BVLC, src net.UDPAddr) {
 		rChan <- struct {
 			bvlc BVLC
@@ -273,8 +274,8 @@ func (c *Client) WhoIs(data WhoIs, timeout time.Duration) ([]bacnet.Device, erro
 	}
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
-	//Use a set to deduplicate results
-	set := map[Iam]bacnet.Address{}
+	// Use a set to deduplicate results
+	set := map[services.Iam]bacnet.Address{}
 
 	for {
 		select {
@@ -291,20 +292,20 @@ func (c *Client) WhoIs(data WhoIs, timeout time.Duration) ([]bacnet.Device, erro
 			}
 			return result, nil
 		case r := <-rChan:
-			//clean/filter  network answers here
+			// clean/filter  network answers here
 			apdu := r.bvlc.NPDU.APDU
 			if apdu != nil {
 				if apdu.DataType == UnconfirmedServiceRequest &&
 					apdu.ServiceType == ServiceUnconfirmedIAm {
-					iam, ok := apdu.Payload.(*Iam)
+					iam, ok := apdu.Payload.(*services.Iam)
 					if !ok {
 						return nil, fmt.Errorf("unexpected payload type %T", apdu.Payload)
 					}
-					//Only add result that we are interested in. Well
-					//behaved devices should not answer if their
-					//InstanceID isn't in the given range. But because
-					//the IAM response is in broadcast mode, we might
-					//receive an answer triggered by an other whois
+					// Only add result that we are interested in. Well
+					// behaved devices should not answer if their
+					// InstanceID isn't in the given range. But because
+					// the IAM response is in broadcast mode, we might
+					// receive an answer triggered by an other whois
 					if data.High != nil && data.Low != nil {
 						if iam.ObjectID.Instance >= bacnet.ObjectInstance(*data.Low) &&
 							iam.ObjectID.Instance <= bacnet.ObjectInstance(*data.High) {
@@ -330,7 +331,7 @@ func (c *Client) WhoIs(data WhoIs, timeout time.Duration) ([]bacnet.Device, erro
 	}
 }
 
-func (c *Client) ReadProperty(ctx context.Context, device bacnet.Device, readProp ReadProperty) (interface{}, error) {
+func (c *Client) ReadProperty(ctx context.Context, device bacnet.Device, readProp services.ReadProperty) (interface{}, error) {
 	invokeID := c.transactions.GetID()
 	defer c.transactions.FreeID(invokeID)
 	npdu := NPDU{
@@ -340,7 +341,7 @@ func (c *Client) ReadProperty(ctx context.Context, device bacnet.Device, readPro
 		Priority:              Normal,
 		Destination:           &device.Addr,
 		Source: bacnet.AddressFromUDP(net.UDPAddr{
-			IP:   c.ipAdress,
+			IP:   c.ipAddress,
 			Port: c.udpPort,
 		}),
 		HopCount: 255,
@@ -361,12 +362,12 @@ func (c *Client) ReadProperty(ctx context.Context, device bacnet.Device, readPro
 
 	select {
 	case apdu := <-rChan:
-		//Todo: ensure response validity, ensure conversion cannot panic
+		// TODO: ensure response validity, ensure conversion cannot panic
 		if apdu.DataType == Error {
-			return nil, *apdu.Payload.(*ApduError)
+			return nil, *apdu.Payload.(*services.APDUError)
 		}
 		if apdu.DataType == ComplexAck && apdu.ServiceType == ServiceConfirmedReadProperty {
-			data := apdu.Payload.(*ReadProperty).Data
+			data := apdu.Payload.(*services.ReadProperty).Data
 			return data, nil
 		}
 		return nil, errors.New("invalid answer")
@@ -375,7 +376,7 @@ func (c *Client) ReadProperty(ctx context.Context, device bacnet.Device, readPro
 	}
 }
 
-func (c *Client) WriteProperty(ctx context.Context, device bacnet.Device, writeProp WriteProperty) error {
+func (c *Client) ReadPropertyMultiple(ctx context.Context, device bacnet.Device, readProp services.ReadPropertyMultiple) (interface{}, error) {
 	invokeID := c.transactions.GetID()
 	defer c.transactions.FreeID(invokeID)
 	npdu := NPDU{
@@ -385,7 +386,52 @@ func (c *Client) WriteProperty(ctx context.Context, device bacnet.Device, writeP
 		Priority:              Normal,
 		Destination:           &device.Addr,
 		Source: bacnet.AddressFromUDP(net.UDPAddr{
-			IP:   c.ipAdress,
+			IP:   c.ipAddress,
+			Port: c.udpPort,
+		}),
+		HopCount: 255,
+		APDU: &APDU{
+			DataType:    ConfirmedServiceRequest,
+			ServiceType: ServiceConfirmedReadPropertyMultiple,
+			InvokeID:    invokeID,
+			Payload:     &readProp,
+		},
+	}
+	rChan := make(chan APDU)
+	c.transactions.SetTransaction(invokeID, rChan, ctx)
+	defer c.transactions.StopTransaction(invokeID)
+	_, err := c.send(npdu)
+	if err != nil {
+		return nil, err
+	}
+
+	select {
+	case apdu := <-rChan:
+		//Todo: ensure response validity, ensure conversion cannot panic
+		if apdu.DataType == Error {
+			return nil, *apdu.Payload.(*services.APDUError)
+		}
+		if apdu.DataType == ComplexAck && apdu.ServiceType == ServiceConfirmedReadPropertyMultiple {
+			data := apdu.Payload.(*services.ReadProperty).Data
+			return data, nil
+		}
+		return nil, errors.New("invalid answer")
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+func (c *Client) WriteProperty(ctx context.Context, device bacnet.Device, writeProp services.WriteProperty) error {
+	invokeID := c.transactions.GetID()
+	defer c.transactions.FreeID(invokeID)
+	npdu := NPDU{
+		Version:               Version1,
+		IsNetworkLayerMessage: false,
+		ExpectingReply:        true,
+		Priority:              Normal,
+		Destination:           &device.Addr,
+		Source: bacnet.AddressFromUDP(net.UDPAddr{
+			IP:   c.ipAddress,
 			Port: c.udpPort,
 		}),
 		HopCount: 255,
@@ -408,7 +454,7 @@ func (c *Client) WriteProperty(ctx context.Context, device bacnet.Device, writeP
 	case apdu := <-wrChan:
 		//Todo: ensure response validity, ensure conversion cannot panic
 		if apdu.DataType == Error {
-			return *apdu.Payload.(*ApduError)
+			return *apdu.Payload.(*services.APDUError)
 		}
 		if apdu.DataType == SimpleAck && apdu.ServiceType == ServiceConfirmedWriteProperty {
 			return nil

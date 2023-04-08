@@ -6,8 +6,8 @@ import (
     "fmt"
 )
 
-//ErrorIncorrectTagID is the error return when the decoded tag doesn't
-//have the expected ID
+// ErrorIncorrectTagID is the error return when the decoded tag doesn't
+// have the expected ID
 type ErrorIncorrectTagID struct {
     Expected byte
     Got      byte
@@ -42,7 +42,7 @@ const (
 )
 
 type tag struct {
-    // Tag id. Typically sequential when tag is contextual. Or refer
+    // Tag ID. Typically sequential when tag is contextual. Or refer
     // to the standard AppData Types
     ID      byte
     Context bool

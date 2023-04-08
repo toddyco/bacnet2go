@@ -14,10 +14,10 @@ const (
 	flag32bits byte = 0xFF
 )
 
-//Encoder is the struct used to turn baetyl-bacnet types to byte arrays. All
-//public methods of encoder can set the internal error value. If such
-//error is set, all encoding methods will be no-ops. This allows to
-//defer error checking after several encoding operations
+// Encoder is the struct used to turn baetyl-bacnet types to byte arrays. All
+// public methods of encoder can set the internal error value. If such
+// error is set, all encoding methods will be no-ops. This allows to
+// defer error checking after several encoding operations
 type Encoder struct {
 	buf *bytes.Buffer
 	err error
@@ -39,8 +39,8 @@ func (e *Encoder) Bytes() []byte {
 	return e.buf.Bytes()
 }
 
-//ContextUnsigned write a (context)tag / value pair where the value
-//type is an unsigned int
+// ContextUnsigned write a (context)tag / value pair where the value
+// type is an unsigned int
 func (e *Encoder) ContextUnsigned(tagNumber byte, value uint32) {
 	if e.err != nil {
 		return
@@ -79,6 +79,7 @@ func (e *Encoder) ContextSigned(tagNumber byte, value int32) {
 		Opening: false,
 		Closing: false,
 	}
+
 	encodeTag(e.buf, t)
 	if (value >= -128) && (value < 128) {
 		e.buf.WriteByte(uint8(value))
@@ -98,6 +99,7 @@ func (e *Encoder) ContextNull(tagNumber byte) {
 		ID:    tagNumber,
 		Value: 1,
 	}
+
 	encodeTag(e.buf, t)
 }
 
@@ -110,6 +112,7 @@ func (e *Encoder) ContextBoolean(tagNumber byte, value bool) {
 		ID:    tagNumber,
 		Value: i,
 	}
+
 	encodeTag(e.buf, t)
 }
 
@@ -118,6 +121,7 @@ func (e *Encoder) ContextTypeReal(tagNumber byte, value float32) {
 		ID:    tagNumber,
 		Value: 4,
 	}
+
 	encodeTag(e.buf, t)
 	binary.Write(e.buf, binary.BigEndian, value)
 }
@@ -127,11 +131,12 @@ func (e *Encoder) ContextTypeDouble(tagNumber byte, value float32) {
 		ID:    tagNumber,
 		Value: 8,
 	}
+
 	encodeTag(e.buf, t)
 	binary.Write(e.buf, binary.BigEndian, value)
 }
 
-//TODO:长度的逻辑有点问题,tag的context值
+// TODO:长度的逻辑有点问题,tag的context值
 func (e *Encoder) ContextTypeOctetString(tagNumber byte, value string) {
 	len := stringLength(value)
 	t := tag{
@@ -148,7 +153,7 @@ func (e *Encoder) ContextTypeOctetString(tagNumber byte, value string) {
 	}
 }
 
-//TODO:tag的context值
+// TODO:tag的context值
 func (e *Encoder) ContextTypeTypeCharacterString(tagNumber byte, value string) {
 	len := stringLength(value)
 	t := tag{
@@ -165,7 +170,7 @@ func (e *Encoder) ContextTypeTypeCharacterString(tagNumber byte, value string) {
 	}
 }
 
-//TODO:长度的逻辑有点问题,tag的context值
+// TODO:长度的逻辑有点问题,tag的context值
 func (e *Encoder) ContextTypeTypeBitString(tagNumber byte, value string) {
 	len := stringLength(value)
 	t := tag{
@@ -207,15 +212,15 @@ func (e *Encoder) ContextTypeEnumerated(tagNumber byte, value uint32) {
 }
 
 func (e *Encoder) ContextTypeDate(tagNumber byte, value uint32) {
-	//TODO:待完善
+	// TODO:待完善
 }
 
 func (e *Encoder) ContextTypeTime(tagNumber byte, value uint32) {
-	//TODO:待完善
+	// TODO:待完善
 }
 
-//ContextObjectID write a (context)tag / value pair where the value
-//type is an unsigned int
+// ContextObjectID write a (context)tag / value pair where the value
+// type is an unsigned int
 func (e *Encoder) ContextObjectID(tagNumber byte, objectID bacnet.ObjectID) {
 	if e.err != nil {
 		return
@@ -223,7 +228,7 @@ func (e *Encoder) ContextObjectID(tagNumber byte, objectID bacnet.ObjectID) {
 	t := tag{
 		ID:      tagNumber,
 		Context: true,
-		Value:   4, //length of objectID is 4
+		Value:   4, // length of objectID is 4
 		Opening: false,
 		Closing: false,
 	}
@@ -236,8 +241,30 @@ func (e *Encoder) ContextObjectID(tagNumber byte, objectID bacnet.ObjectID) {
 	_ = binary.Write(e.buf, binary.BigEndian, v)
 }
 
-//AppData writes a tag and value of any standard baetyl-bacnet application
-//data type. Returns an error if v if of a invalid type
+// ContextOpening
+func (e *Encoder) ContextOpening(tagNumber byte) {
+	t := tag{
+		ID:      tagNumber,
+		Context: true,
+		Opening: true,
+	}
+
+	encodeTag(e.buf, t)
+}
+
+// ContextClosing
+func (e *Encoder) ContextClosing(tagNumber byte) {
+	t := tag{
+		ID:      tagNumber,
+		Context: true,
+		Closing: true,
+	}
+
+	encodeTag(e.buf, t)
+}
+
+// AppData writes a tag and value of any standard baetyl-bacnet application
+// data type. Returns an error if v if of a invalid type
 func (e *Encoder) AppData(v interface{}) {
 	if e.err != nil {
 		return
@@ -287,6 +314,7 @@ func (e *Encoder) AppData(v interface{}) {
 
 func (e *Encoder) ContextAbstractType(tagNumber byte, v bacnet.PropertyValue) error {
 	encodeTag(e.buf, tag{ID: tagNumber, Context: true, Opening: true})
+
 	switch v.Type {
 	case bacnet.TypeNull:
 		e.ContextNull(byte(v.Type))
@@ -362,7 +390,7 @@ func valueLength(value uint32) int {
 	return 4
 }
 
-//unsigned writes the value in the buffer using a variabled-sized encoding
+// unsigned writes the value in the buffer using a variabled-sized encoding
 func unsigned(buf *bytes.Buffer, value uint32) int {
 	switch {
 	case value < 0x100:

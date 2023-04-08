@@ -1,10 +1,11 @@
-package bacip
+package bacnet_ip
 
 import (
 	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/toddyco/bacnet2go/bacnet_ip/services"
 
 	"github.com/toddyco/bacnet2go/bacnet"
 )
@@ -24,16 +25,16 @@ const (
 )
 
 type NPDU struct {
-	Version Version //Always one
+	Version Version // Always one
 	// This 3 fields are packed in the control byte
-	IsNetworkLayerMessage bool //If true, there is no APDU
+	IsNetworkLayerMessage bool // If true, there is no APDU
 	ExpectingReply        bool
 	Priority              NPDUPriority
 
 	Destination *bacnet.Address
 	Source      *bacnet.Address
 	HopCount    byte
-	//The two are only significant if IsNetworkLayerMessage is true
+	// The two are only significant if IsNetworkLayerMessage is true
 	NetworkMessageType byte
 	VendorID           uint16
 
@@ -178,10 +179,10 @@ func (npdu *NPDU) UnmarshallBinary(data []byte) error {
 	return nil
 }
 
-////go:generate stringer -type=PDUType
+// //go:generate stringer -type=PDUType
 type PDUType byte
 
-//TODO: Maybe do from 0 to 7
+// TODO: Maybe do from 0 to 7
 const (
 	ConfirmedServiceRequest   PDUType = 0
 	UnconfirmedServiceRequest PDUType = 0x10
@@ -230,16 +231,16 @@ const (
 	ServiceConfirmedAtomicReadFile  ServiceType = 6
 	ServiceConfirmedAtomicWriteFile ServiceType = 7
 	/* Object Access Services */
-	ServiceConfirmedAddListElement      ServiceType = 8
-	ServiceConfirmedRemoveListElement   ServiceType = 9
-	ServiceConfirmedCreateObject        ServiceType = 10
-	ServiceConfirmedDeleteObject        ServiceType = 11
-	ServiceConfirmedReadProperty        ServiceType = 12
-	ServiceConfirmedReadPropConditional ServiceType = 13
-	ServiceConfirmedReadPropMultiple    ServiceType = 14
-	ServiceConfirmedReadRange           ServiceType = 26
-	ServiceConfirmedWriteProperty       ServiceType = 15
-	ServiceConfirmedWritePropMultiple   ServiceType = 16
+	ServiceConfirmedAddListElement        ServiceType = 8
+	ServiceConfirmedRemoveListElement     ServiceType = 9
+	ServiceConfirmedCreateObject          ServiceType = 10
+	ServiceConfirmedDeleteObject          ServiceType = 11
+	ServiceConfirmedReadProperty          ServiceType = 12
+	ServiceConfirmedReadPropConditional   ServiceType = 13
+	ServiceConfirmedReadPropertyMultiple  ServiceType = 14
+	ServiceConfirmedReadRange             ServiceType = 26
+	ServiceConfirmedWriteProperty         ServiceType = 15
+	ServiceConfirmedWritePropertyMultiple ServiceType = 16
 	/* Remote Device Management Services */
 	ServiceConfirmedDeviceCommunicationControl ServiceType = 17
 	ServiceConfirmedPrivateTransfer            ServiceType = 18
@@ -260,7 +261,7 @@ const (
 	//MaxBACnetConfirmedService ServiceType = 30
 )
 
-//Todo: support more complex APDU
+// Todo: support more complex APDU
 type APDU struct {
 	DataType    PDUType
 	ServiceType ServiceType
@@ -311,16 +312,16 @@ func (apdu *APDU) UnmarshalBinary(data []byte) error {
 		return fmt.Errorf("read APDU ServiceType: %w", err)
 	}
 	if apdu.DataType == UnconfirmedServiceRequest && apdu.ServiceType == ServiceUnconfirmedWhoIs {
-		apdu.Payload = &WhoIs{}
+		apdu.Payload = &services.WhoIs{}
 
 	} else if apdu.DataType == UnconfirmedServiceRequest && apdu.ServiceType == ServiceUnconfirmedIAm {
-		apdu.Payload = &Iam{}
+		apdu.Payload = &services.Iam{}
 
 	} else if apdu.DataType == ComplexAck && apdu.ServiceType == ServiceConfirmedReadProperty {
-		apdu.Payload = &ReadProperty{}
+		apdu.Payload = &services.ReadProperty{}
 
 	} else if apdu.DataType == Error {
-		apdu.Payload = &ApduError{}
+		apdu.Payload = &services.APDUError{}
 	} else {
 		// Just pass raw data, decoding is not yet ready
 		apdu.Payload = &DataPayload{}
