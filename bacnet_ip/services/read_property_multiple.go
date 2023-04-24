@@ -27,8 +27,8 @@ func (rpm ReadPropertyMultiple) MarshalBinary() ([]byte, error) {
 		encoder.ContextObjectID(0, objectID)
 		encoder.ContextOpening(1)
 
-		for _, propertyID := range rpm.PropertyIDs {
-			encoder.ContextUnsigned(0, uint32(propertyID[0].Type))
+		for _, propertyID := range rpm.PropertyIDs[0] {
+			encoder.ContextUnsigned(0, uint32(propertyID.Type))
 		}
 
 		encoder.ContextClosing(1)
