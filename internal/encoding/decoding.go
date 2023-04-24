@@ -63,32 +63,41 @@ func (d *Decoder) PeekTag() (t tag, err error) {
 // Sets the decoder error if the tagID isn't the expected or if the tag isn't contextual.
 // If ErrorIncorrectTag is set, the internal buffer cursor is ready to read again the
 // same tag.
-func (d *Decoder) ContextValue(expectedTagID byte, val *uint32) {
+func (d *Decoder) ContextValue(expectedTagID byte, val *uint32) error {
 	if d.err != nil {
-		return
+		return d.err
 	}
+	
 	length, t, err := decodeTag(d.buf)
+
 	if err != nil {
 		d.err = err
-		return
+		return d.err
 	}
+
 	if t.ID != expectedTagID {
 		d.err = ErrorIncorrectTagID{Expected: expectedTagID, Got: t.ID}
 		err := d.unread(length)
 		if err != nil {
 			d.err = err
 		}
-		return
+		return d.err
 	}
+
 	if !t.Context {
 		d.err = errors.New("tag isn't contextual")
 	}
+
 	v, err := decodeUnsignedWithLen(d.buf, int(t.Value))
+
 	if err != nil {
 		d.err = err
-		return
+		return d.err
 	}
+
 	*val = v
+
+	return err
 }
 
 // ContextObjectID read a (context)tag / value pair where the value
@@ -131,40 +140,46 @@ func (e AppDataTypeMismatch) Error() string {
 	return fmt.Sprintf("decode AppData: mismatched type, cannot decode %s in type %s", e.wanted, e.got.String())
 }
 
-func (d *Decoder) ContextOpening(tagNumber byte) {
+func (d *Decoder) ContextOpening(tagNumber byte) error {
 	_, tag, err := decodeTag(d.buf)
 
 	if tag.ID != tagNumber {
 		d.err = fmt.Errorf("decode expected opening tag %d but got %d", tagNumber, tag.ID)
+		return d.err
 	}
 
 	if err != nil {
 		d.err = fmt.Errorf("decode opening tag: %w", err)
-		return
+		return d.err
 	}
 
 	if !tag.Opening {
 		d.err = fmt.Errorf("decode opening tag: not an opening tag")
-		return
+		return d.err
 	}
+
+	return err
 }
 
-func (d *Decoder) ContextClosing(tagNumber byte) {
+func (d *Decoder) ContextClosing(tagNumber byte) error {
 	_, tag, err := decodeTag(d.buf)
 
 	if tag.ID != tagNumber {
 		d.err = fmt.Errorf("decode expected closing tag %d but got %d", tagNumber, tag.ID)
+		return d.err
 	}
 
 	if err != nil {
 		d.err = fmt.Errorf("decode closing tag: %w", err)
-		return
+		return d.err
 	}
 
 	if !tag.Closing {
 		d.err = fmt.Errorf("decode closing tag: not a closing tag")
-		return
+		return d.err
 	}
+
+	return err
 }
 
 // AppData read the next tag and value. The value type advertised

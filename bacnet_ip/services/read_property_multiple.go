@@ -9,12 +9,13 @@ import (
 type ReadPropertyMultiple struct {
 	ObjectIDs   []bacnet.ObjectID
 	PropertyIDs [][]bacnet.PropertyIdentifier
-	Data        []interface{} // will contain the response
+	Data        [][]interface{} // will contain the response
 }
 
 type ObjectAndProperties struct {
 	ObjectID    bacnet.ObjectID
 	PropertyIDs []bacnet.PropertyIdentifier
+	Data        []interface{}
 }
 
 func (rpm ReadPropertyMultiple) MarshalBinary() ([]byte, error) {
@@ -37,59 +38,70 @@ func (rpm ReadPropertyMultiple) MarshalBinary() ([]byte, error) {
 }
 
 func (rpm *ReadPropertyMultiple) UnmarshalBinary(data []byte) error {
+	rpm.ObjectIDs = []bacnet.ObjectID{}
+	rpm.PropertyIDs = [][]bacnet.PropertyIdentifier{}
+	rpm.Data = [][]interface{}{}
+
+	var propIdx int
+
 	decoder := encoding.NewDecoder(data)
 
-	objAndProps := ObjectAndProperties{
-		ObjectID:    bacnet.ObjectID{},
-		PropertyIDs: []bacnet.PropertyIdentifier{},
-	}
-
-	decoder.ContextObjectID(0, &objAndProps.ObjectID)
-	decoder.ContextOpening(1)
-
-	rpm.Data = make([]interface{}, 0, len(rpm.PropertyIDs))
-
-	for objectIdx, objectID := range rpm.ObjectIDs {
-
-		decoder := encoding.NewDecoder(data)
-		decoder.ContextObjectID(0, &objectID)
-		decoder.ContextOpening(1)
-
-		tag, err := decoder.PeekTag()
-
-		if tag.Closing {
-			break
+	for { // Loop over objects
+		objAndProps := ObjectAndProperties{
+			ObjectID:    bacnet.ObjectID{},
+			PropertyIDs: []bacnet.PropertyIdentifier{},
+			Data:        []interface{}{},
 		}
 
-		var val uint32
-		decoder.ContextValue(2, &val)
+		decoder.ContextObjectID(0, &objAndProps.ObjectID)
 
 		if decoder.Error() != nil {
+			decoder.ResetError()
 			break
 		}
 
-		rpm.PropertyIDs[objectIdx] = append(rpm.PropertyIDs[objectIdx], bacnet.PropertyIdentifier{})
-		rpm.Data = append(rpm.Data, nil)
+		decoder.ContextOpening(1)
 
-		rpm.PropertyIDs[objectIdx][0].Type = bacnet.PropertyType(val)
-		rpm.PropertyIDs[objectIdx][0].ArrayIndex = new(uint32)
-		decoder.ContextValue(3, rpm.PropertyIDs[objectIdx][0].ArrayIndex)
-		err = decoder.Error()
-		var e encoding.ErrorIncorrectTagID
+		propIdx = 0
 
-		// The array index tag is optional, per BACnet spec
-		if err != nil && errors.As(err, &e) {
-			rpm.PropertyIDs[objectIdx][0].ArrayIndex = nil
-			decoder.ResetError()
+		for { // Loop over properties
+			var val uint32
+			decoder.ContextValue(2, &val)
+
+			if decoder.Error() != nil {
+				decoder.ResetError()
+				break
+			}
+
+			objAndProps.PropertyIDs = append(objAndProps.PropertyIDs, bacnet.PropertyIdentifier{})
+			objAndProps.Data = append(objAndProps.Data, nil)
+
+			objAndProps.PropertyIDs[propIdx].Type = bacnet.PropertyType(val)
+			objAndProps.PropertyIDs[propIdx].ArrayIndex = new(uint32)
+			decoder.ContextValue(3, objAndProps.PropertyIDs[propIdx].ArrayIndex)
+			err := decoder.Error()
+			var e encoding.ErrorIncorrectTagID
+
+			// The array index tag is optional, per BACnet spec
+			if err != nil && errors.As(err, &e) {
+				objAndProps.PropertyIDs[propIdx].ArrayIndex = nil
+				decoder.ResetError()
+			}
+
+			decoder.ContextAbstractType(4, &objAndProps.Data[propIdx])
+
+			propIdx++
 		}
 
-		decoder.ContextAbstractType(4, &rpm.Data[objectIdx])
+		decoder.ContextClosing(1)
 
-		err = decoder.Error()
-
-		if err != nil {
+		if err := decoder.Error(); err != nil {
 			return err
 		}
+
+		rpm.ObjectIDs = append(rpm.ObjectIDs, objAndProps.ObjectID)
+		rpm.PropertyIDs = append(rpm.PropertyIDs, objAndProps.PropertyIDs)
+		rpm.Data = append(rpm.Data, objAndProps.Data)
 	}
 
 	return nil
