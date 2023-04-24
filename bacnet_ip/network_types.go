@@ -306,20 +306,21 @@ func (apdu *APDU) UnmarshalBinary(data []byte) error {
 			return err
 		}
 	}
+
 	//Todo refactor
 	err = binary.Read(buf, binary.BigEndian, &apdu.ServiceType)
 	if err != nil {
 		return fmt.Errorf("read APDU ServiceType: %w", err)
 	}
+
 	if apdu.DataType == UnconfirmedServiceRequest && apdu.ServiceType == ServiceUnconfirmedWhoIs {
 		apdu.Payload = &services.WhoIs{}
-
 	} else if apdu.DataType == UnconfirmedServiceRequest && apdu.ServiceType == ServiceUnconfirmedIAm {
 		apdu.Payload = &services.Iam{}
-
 	} else if apdu.DataType == ComplexAck && apdu.ServiceType == ServiceConfirmedReadProperty {
 		apdu.Payload = &services.ReadProperty{}
-
+	} else if apdu.DataType == ComplexAck && apdu.ServiceType == ServiceConfirmedReadPropertyMultiple {
+		apdu.Payload = &services.ReadPropertyMultiple{}
 	} else if apdu.DataType == Error {
 		apdu.Payload = &services.APDUError{}
 	} else {

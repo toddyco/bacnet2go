@@ -30,6 +30,7 @@ func NewDecoder(b []byte) *Decoder {
 func (d *Decoder) Error() error {
 	return d.err
 }
+
 func (d *Decoder) ResetError() {
 	d.err = nil
 }
@@ -45,9 +46,18 @@ func (d *Decoder) unread(n int) error {
 	return nil
 }
 
-// ContextValue reads the next context tag/value couple and set val accordingly.
-// Sets the decoder error  if the tagID isn't the expected or if the tag isn't contextual.
-// If ErrorIncorrectTag is set, the internal buffer cursor is ready to read again the same tag.
+// PeekTag
+func (d *Decoder) PeekTag() (t tag, err error) {
+	length, t, err := decodeTag(d.buf)
+	d.unread(length)
+
+	return t, err
+}
+
+// ContextValue reads the next context tag/value couple and sets val accordingly.
+// Sets the decoder error if the tagID isn't the expected or if the tag isn't contextual.
+// If ErrorIncorrectTag is set, the internal buffer cursor is ready to read again the
+// same tag.
 func (d *Decoder) ContextValue(expectedTagID byte, val *uint32) {
 	if d.err != nil {
 		return
@@ -114,6 +124,42 @@ type AppDataTypeMismatch struct {
 
 func (e AppDataTypeMismatch) Error() string {
 	return fmt.Sprintf("decode AppData: mismatched type, cannot decode %s in type %s", e.wanted, e.got.String())
+}
+
+func (d *Decoder) ContextOpening(tagNumber byte) {
+	_, tag, err := decodeTag(d.buf)
+
+	if tag.ID != tagNumber {
+		d.err = fmt.Errorf("decode expected opening tag %d but got %d", tagNumber, tag.ID)
+	}
+
+	if err != nil {
+		d.err = fmt.Errorf("decode opening tag: %w", err)
+		return
+	}
+
+	if !tag.Opening {
+		d.err = fmt.Errorf("decode opening tag: not an opening tag")
+		return
+	}
+}
+
+func (d *Decoder) ContextClosing(tagNumber byte) {
+	_, tag, err := decodeTag(d.buf)
+
+	if tag.ID != tagNumber {
+		d.err = fmt.Errorf("decode expected closing tag %d but got %d", tagNumber, tag.ID)
+	}
+
+	if err != nil {
+		d.err = fmt.Errorf("decode closing tag: %w", err)
+		return
+	}
+
+	if !tag.Closing {
+		d.err = fmt.Errorf("decode closing tag: not a closing tag")
+		return
+	}
 }
 
 // AppData read the next tag and value. The value type advertised

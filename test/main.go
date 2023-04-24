@@ -11,7 +11,16 @@ import (
 )
 
 func main() {
-	client, err := bacnet_ip.NewClient("en7", bacnet_ip.DefaultUDPPort)
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("panic in handle message: ", r)
+		}
+	}()
+
+	t := time.Now().UnixMilli()
+	fmt.Println(t)
+
+	client, err := bacnet_ip.NewClient("en0", bacnet_ip.DefaultUDPPort)
 
 	if err != nil {
 		fmt.Println(err)
@@ -39,16 +48,91 @@ func main() {
 		Adr: nil,
 	}
 
+	//ten := make([]int, 10)
+
+	//for range ten {
+	//	GetPresentValue(client, addr, 700900, bacnet.ObjectID{
+	//		Type:     bacnet.AnalogInput,
+	//		Instance: bacnet.ObjectInstance(1),
+	//	})
+	//	GetPresentValue(client, addr, 700900, bacnet.ObjectID{
+	//		Type:     bacnet.AnalogValue,
+	//		Instance: bacnet.ObjectInstance(175),
+	//	})
+	//	GetPresentValue(client, addr, 700900, bacnet.ObjectID{
+	//		Type:     bacnet.AnalogValue,
+	//		Instance: bacnet.ObjectInstance(176),
+	//	})
+	//	GetPresentValue(client, addr, 700900, bacnet.ObjectID{
+	//		Type:     bacnet.AnalogValue,
+	//		Instance: bacnet.ObjectInstance(177),
+	//	})
+	//	GetPresentValue(client, addr, 700900, bacnet.ObjectID{
+	//		Type:     bacnet.AnalogValue,
+	//		Instance: bacnet.ObjectInstance(178),
+	//	})
+	//	GetPresentValue(client, addr, 700900, bacnet.ObjectID{
+	//		Type:     bacnet.AnalogValue,
+	//		Instance: bacnet.ObjectInstance(179),
+	//	})
+	//	GetPresentValue(client, addr, 700900, bacnet.ObjectID{
+	//		Type:     bacnet.AnalogValue,
+	//		Instance: bacnet.ObjectInstance(180),
+	//	})
+	//	GetPresentValue(client, addr, 700900, bacnet.ObjectID{
+	//		Type:     bacnet.AnalogValue,
+	//		Instance: bacnet.ObjectInstance(181),
+	//	})
+	//	GetPresentValue(client, addr, 700900, bacnet.ObjectID{
+	//		Type:     bacnet.AnalogValue,
+	//		Instance: bacnet.ObjectInstance(182),
+	//	})
+	//	GetPresentValue(client, addr, 700900, bacnet.ObjectID{
+	//		Type:     bacnet.AnalogValue,
+	//		Instance: bacnet.ObjectInstance(183),
+	//	})
+	//	GetPresentValue(client, addr, 700900, bacnet.ObjectID{
+	//		Type:     bacnet.AnalogValue,
+	//		Instance: bacnet.ObjectInstance(184),
+	//	})
+	//	GetPresentValue(client, addr, 700900, bacnet.ObjectID{
+	//		Type:     bacnet.AnalogValue,
+	//		Instance: bacnet.ObjectInstance(185),
+	//	})
+	//	GetPresentValue(client, addr, 700900, bacnet.ObjectID{
+	//		Type:     bacnet.AnalogValue,
+	//		Instance: bacnet.ObjectInstance(186),
+	//	})
+	//	GetPresentValue(client, addr, 700900, bacnet.ObjectID{
+	//		Type:     bacnet.AnalogValue,
+	//		Instance: bacnet.ObjectInstance(187),
+	//	})
+	//	GetPresentValue(client, addr, 700900, bacnet.ObjectID{
+	//		Type:     bacnet.AnalogValue,
+	//		Instance: bacnet.ObjectInstance(188),
+	//	})
+	//	GetPresentValue(client, addr, 700900, bacnet.ObjectID{
+	//		Type:     bacnet.AnalogValue,
+	//		Instance: bacnet.ObjectInstance(189),
+	//	})
+	//}
+
+	//GetPointList(client, addr, 700900)
+
 	//GetPresentValue(client, addr, 700900, bacnet.ObjectID{
 	//	Type:     bacnet.AnalogInput,
 	//	Instance: bacnet.ObjectInstance(1),
 	//})
-	//
-	//GetPointList(client, addr, 700900)
 
-	GetPointDetails(client, addr, 700900, bacnet.ObjectID{
-		Type:     bacnet.AnalogInput,
-		Instance: bacnet.ObjectInstance(1),
+	GetPointDetails(client, addr, 700900, []bacnet.ObjectID{
+		bacnet.ObjectID{
+			Type:     bacnet.AnalogInput,
+			Instance: bacnet.ObjectInstance(1),
+		},
+		bacnet.ObjectID{
+			Type:     bacnet.AnalogValue,
+			Instance: bacnet.ObjectInstance(188),
+		},
 	})
 
 	// devices, err := client.WhoIs(bacip.WhoIs{
@@ -59,6 +143,8 @@ func main() {
 	// j, err = json.Marshal(devices)
 	//
 	// fmt.Println(string(j))
+
+	fmt.Println(time.Now().UnixMilli() - t)
 
 }
 
@@ -109,16 +195,13 @@ func GetPointList(c *bacnet_ip.Client, addr bacnet.Address, instanceID int) {
 	time.Sleep(5)
 }
 
-func GetPointDetails(c *bacnet_ip.Client, addr bacnet.Address, instanceID int, objectID bacnet.ObjectID) {
+func GetPointDetails(c *bacnet_ip.Client, addr bacnet.Address, instanceID int, objectIDs []bacnet.ObjectID) {
 	ctx, cancel := context.WithTimeout(context.Background(), 800000*time.Second)
 	defer cancel()
 
 	val, err := c.ReadPropertyMultiple(ctx, makeDevice(addr, instanceID), services.ReadPropertyMultiple{
-		ObjectID: bacnet.ObjectID{
-			Type:     bacnet.BacnetDevice,
-			Instance: bacnet.ObjectInstance(instanceID),
-		},
-		PropertyIDs: []bacnet.PropertyIdentifier{
+		ObjectIDs: objectIDs,
+		PropertyIDs: [][]bacnet.PropertyIdentifier{{
 			bacnet.PropertyIdentifier{
 				Type: bacnet.ObjectName,
 			},
@@ -126,15 +209,12 @@ func GetPointDetails(c *bacnet_ip.Client, addr bacnet.Address, instanceID int, o
 				Type: bacnet.PresentValue,
 			},
 			bacnet.PropertyIdentifier{
-				Type: bacnet.StatusFlags,
-			},
-			bacnet.PropertyIdentifier{
 				Type: bacnet.Description,
 			},
 			bacnet.PropertyIdentifier{
 				Type: bacnet.Units,
 			},
-		},
+		}},
 		Data: nil,
 	})
 
