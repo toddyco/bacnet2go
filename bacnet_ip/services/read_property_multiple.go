@@ -12,8 +12,13 @@ type ReadPropertyMultiple struct {
 	Data        []interface{} // will contain the response
 }
 
+type ObjectAndProperties struct {
+	ObjectID    bacnet.ObjectID
+	PropertyIDs []bacnet.PropertyIdentifier
+}
+
 func (rpm ReadPropertyMultiple) MarshalBinary() ([]byte, error) {
-	rpm.preparePropertyIDsSlice()
+	//rpm.preparePropertyIDsSlice()
 
 	encoder := encoding.NewEncoder()
 
@@ -32,6 +37,16 @@ func (rpm ReadPropertyMultiple) MarshalBinary() ([]byte, error) {
 }
 
 func (rpm *ReadPropertyMultiple) UnmarshalBinary(data []byte) error {
+	decoder := encoding.NewDecoder(data)
+
+	objAndProps := ObjectAndProperties{
+		ObjectID:    bacnet.ObjectID{},
+		PropertyIDs: []bacnet.PropertyIdentifier{},
+	}
+
+	decoder.ContextObjectID(0, &objAndProps.ObjectID)
+	decoder.ContextOpening(1)
+
 	rpm.Data = make([]interface{}, 0, len(rpm.PropertyIDs))
 
 	for objectIdx, objectID := range rpm.ObjectIDs {
@@ -80,16 +95,12 @@ func (rpm *ReadPropertyMultiple) UnmarshalBinary(data []byte) error {
 	return nil
 }
 
-// preparePropertyIDsSlice ensures that rpm.PropertyIDs has one slice of PropertyIdentifier
-// structs for every rpm.ObjectIDs
-func (rpm *ReadPropertyMultiple) preparePropertyIDsSlice() {
-	if len(rpm.ObjectIDs) > len(rpm.PropertyIDs) {
-		for i := range rpm.ObjectIDs {
-			if i == 0 {
-				continue
-			}
-
-			rpm.PropertyIDs[i] = rpm.PropertyIDs[0]
-		}
-	}
-}
+//// preparePropertyIDsSlice ensures that rpm.PropertyIDs has one slice of PropertyIdentifier
+//// structs for every rpm.ObjectIDs
+//func (rpm *ReadPropertyMultiple) preparePropertyIDsSlice() {
+//	lenDiff := len(rpm.ObjectIDs) - len(rpm.PropertyIDs)
+//
+//	for x := lenDiff; x > 0; x-- {
+//		rpm.PropertyIDs = append(rpm.PropertyIDs, rpm.PropertyIDs[0])
+//	}
+//}

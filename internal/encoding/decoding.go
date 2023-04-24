@@ -49,7 +49,12 @@ func (d *Decoder) unread(n int) error {
 // PeekTag
 func (d *Decoder) PeekTag() (t tag, err error) {
 	length, t, err := decodeTag(d.buf)
-	d.unread(length)
+
+	if err != nil {
+		return t, err
+	}
+
+	err = d.unread(length)
 
 	return t, err
 }

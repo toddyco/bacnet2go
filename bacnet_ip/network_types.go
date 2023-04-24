@@ -96,7 +96,7 @@ func (npdu NPDU) MarshalBinary() ([]byte, error) {
 	return bytes, nil
 }
 
-func (npdu *NPDU) UnmarshallBinary(data []byte) error {
+func (npdu *NPDU) UnmarshalBinary(data []byte) error {
 	buf := bytes.NewBuffer(data)
 	err := binary.Read(buf, binary.BigEndian, &npdu.Version)
 	if err != nil {
@@ -172,7 +172,7 @@ func (npdu *NPDU) UnmarshallBinary(data []byte) error {
 			}
 		}
 	} else {
-		npdu.APDU = &APDU{}
+		npdu.APDU = &APDU{} // wipes out APDU from original request!
 		return npdu.APDU.UnmarshalBinary(buf.Bytes())
 
 	}
@@ -414,5 +414,5 @@ func (bvlc *BVLC) UnmarshalBinary(data []byte) error {
 	if len(remaining) != int(length)-4 {
 		return fmt.Errorf("incoherent Length field in BVCL. Advertized payload size is %d, real size  %d", length-4, len(remaining))
 	}
-	return bvlc.NPDU.UnmarshallBinary(remaining)
+	return bvlc.NPDU.UnmarshalBinary(remaining)
 }
