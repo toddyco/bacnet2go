@@ -316,13 +316,15 @@ func (apdu *APDU) UnmarshalBinary(data []byte) error {
 	if apdu.DataType == UnconfirmedServiceRequest && apdu.ServiceType == ServiceUnconfirmedWhoIs {
 		apdu.Payload = &services.WhoIs{}
 	} else if apdu.DataType == UnconfirmedServiceRequest && apdu.ServiceType == ServiceUnconfirmedIAm {
-		apdu.Payload = &services.Iam{}
+		apdu.Payload = &services.IAm{}
 	} else if apdu.DataType == ComplexAck && apdu.ServiceType == ServiceConfirmedReadProperty {
 		apdu.Payload = &services.ReadProperty{}
 	} else if apdu.DataType == ComplexAck && apdu.ServiceType == ServiceConfirmedReadPropertyMultiple {
 		apdu.Payload = &services.ReadPropertyMultiple{}
 	} else if apdu.DataType == Error {
 		apdu.Payload = &services.APDUError{}
+	} else if apdu.DataType == Abort {
+		apdu.Payload = &services.APDUAbort{}
 	} else {
 		// Just pass raw data, decoding is not yet ready
 		apdu.Payload = &DataPayload{}

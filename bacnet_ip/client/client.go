@@ -140,16 +140,20 @@ func (c *Client) listen() {
 	for {
 		b := make([]byte, 2048)
 		i, addr, err := c.udp.ReadFromUDP(b)
+
 		if err != nil {
 			c.Logger.Error(err.Error())
 		}
+
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
 					c.Logger.Error("panic in handle message: ", r)
 				}
 			}()
+
 			err := c.handleMessage(addr, b[:i])
+
 			if err != nil {
 				c.Logger.Error("handle msg: ", err)
 			}
@@ -207,7 +211,7 @@ func (c *Client) IAm() error {
 		APDU: &bacnet_ip.APDU{
 			DataType:    bacnet_ip.UnconfirmedServiceRequest,
 			ServiceType: bacnet_ip.ServiceUnconfirmedIAm,
-			Payload: &services.Iam{
+			Payload: &services.IAm{
 				ObjectID: bacnet.ObjectID{
 					Type:     bacnet.BacnetDevice,
 					Instance: 99999,
@@ -269,7 +273,7 @@ func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]bacnet.Dev
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
 	// Use a set to deduplicate results
-	set := map[services.Iam]bacnet.Address{}
+	set := map[services.IAm]bacnet.Address{}
 
 	for {
 		select {
@@ -291,7 +295,7 @@ func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]bacnet.Dev
 			if apdu != nil {
 				if apdu.DataType == bacnet_ip.UnconfirmedServiceRequest &&
 					apdu.ServiceType == bacnet_ip.ServiceUnconfirmedIAm {
-					iam, ok := apdu.Payload.(*services.Iam)
+					iam, ok := apdu.Payload.(*services.IAm)
 					if !ok {
 						return nil, fmt.Errorf("unexpected payload type %T", apdu.Payload)
 					}

@@ -78,11 +78,11 @@ func TestWhoIsCoherency(t *testing.T) {
 func TestIamEncodingAndCoherency(t *testing.T) {
 	ttc := []struct {
 		data string //hex string
-		iam Iam
+		iam IAm
 	}{
 		{
 			data: "c4020075e92205c4910022016c",
-			iam: Iam{
+			iam: IAm{
 				ObjectID: bacnet.ObjectID{
 					Type:     8,
 					Instance: 30185,
@@ -99,7 +99,7 @@ func TestIamEncodingAndCoherency(t *testing.T) {
 			result, err := tc.iam.MarshalBinary()
 			is.NoErr(err)
 			is.Equal(tc.data, hex.EncodeToString(result))
-			iam := Iam{}
+			iam := IAm{}
 			is.NoErr(iam.UnmarshalBinary(result))
 			result2, err := iam.MarshalBinary()
 			is.NoErr(err)

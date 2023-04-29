@@ -5,14 +5,14 @@ import (
 	"github.com/toddyco/bacnet2go/internal/encoding"
 )
 
-type Iam struct {
+type IAm struct {
 	ObjectID            bacnet.ObjectID
 	MaxApduLength       uint32
 	SegmentationSupport bacnet.SegmentationSupport
 	VendorID            uint32
 }
 
-func (iam Iam) MarshalBinary() ([]byte, error) {
+func (iam IAm) MarshalBinary() ([]byte, error) {
 	encoder := encoding.NewEncoder()
 	encoder.AppData(iam.ObjectID)
 	encoder.AppData(iam.MaxApduLength)
@@ -21,7 +21,7 @@ func (iam Iam) MarshalBinary() ([]byte, error) {
 	return encoder.Bytes(), encoder.Error()
 }
 
-func (iam *Iam) UnmarshalBinary(data []byte) error {
+func (iam *IAm) UnmarshalBinary(data []byte) error {
 	decoder := encoding.NewDecoder(data)
 	decoder.AppData(&iam.ObjectID, nil)
 	decoder.AppData(&iam.MaxApduLength, nil)

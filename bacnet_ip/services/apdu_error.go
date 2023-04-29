@@ -13,8 +13,9 @@ type APDUError struct {
 }
 
 func (e APDUError) Error() string {
-	return fmt.Sprintf("apdu error class %v code %v", e.Class, e.Code)
+	return fmt.Sprintf("APDU error class %v code %v", e.Class, e.Code)
 }
+
 func (e APDUError) MarshalBinary() ([]byte, error) {
 	panic("not implemented")
 }

@@ -57,7 +57,7 @@ func TestFullEncodingAndCoherency(t *testing.T) {
 					APDU: &APDU{
 						DataType:    UnconfirmedServiceRequest,
 						ServiceType: ServiceUnconfirmedIAm,
-						Payload: &services.Iam{
+						Payload: &services.IAm{
 							ObjectID: bacnet.ObjectID{
 								Type:     8,
 								Instance: 30185,
