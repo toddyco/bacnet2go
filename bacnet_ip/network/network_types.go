@@ -1,4 +1,4 @@
-package network_type
+package network
 
 import (
 	"bytes"

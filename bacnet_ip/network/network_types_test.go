@@ -1,4 +1,4 @@
-package network_type
+package network
 
 import (
 	"github.com/toddyco/bacnet2go/bacnet_ip/services"
