@@ -7,7 +7,7 @@ import (
 )
 
 type APDUAbort struct {
-	Reason bacnet.ErrorCode
+	Reason bacnet.AbortReason
 }
 
 func (a APDUAbort) Error() string {

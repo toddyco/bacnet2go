@@ -187,7 +187,7 @@ func (c *Client) handleMessage(src *net.UDPAddr, b []byte) error {
 
 	c.subscriptions.RUnlock()
 
-	if apdu.DataType == network.ComplexAck || apdu.DataType == network.SimpleAck || apdu.DataType == network.Error || apdu.DataType == network.Abort {
+	if apdu.DataType.SupportsInvokeID() {
 		invokeID := bvlc.NPDU.APDU.InvokeID
 		tx, ok := c.transactions.GetTransaction(invokeID)
 
@@ -301,7 +301,7 @@ func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]bacnet.Dev
 			// clean/filter  network answers here
 			apdu := r.bvlc.NPDU.APDU
 			if apdu != nil {
-				if apdu.DataType == network.UnconfirmedServiceRequest &&
+				if apdu.DataType.IsType(network.UnconfirmedServiceRequest) &&
 					apdu.ServiceType == network.ServiceUnconfirmedIAm {
 					iam, ok := apdu.Payload.(*services.IAm)
 					if !ok {
@@ -370,10 +370,10 @@ func (c *Client) ReadProperty(ctx context.Context, device bacnet.Device, readPro
 	select {
 	case apdu := <-rChan:
 		// TODO: ensure response validity, ensure conversion cannot panic
-		if apdu.DataType == network.Error {
+		if apdu.DataType.IsType(network.Error) {
 			return nil, *apdu.Payload.(*services.APDUError)
 		}
-		if apdu.DataType == network.ComplexAck && apdu.ServiceType == network.ServiceConfirmedReadProperty {
+		if apdu.DataType.IsType(network.ComplexAck) && apdu.ServiceType == network.ServiceConfirmedReadProperty {
 			data := apdu.Payload.(*services.ReadProperty).Data
 			return data, nil
 		}
@@ -416,11 +416,11 @@ func (c *Client) ReadPropertyMultiple(ctx context.Context, device bacnet.Device,
 	select {
 	case apdu := <-rChan:
 		// TODO: ensure response validity, ensure conversion cannot panic
-		if apdu.DataType == network.Error {
+		if apdu.DataType.IsType(network.Error) {
 			return nil, *apdu.Payload.(*services.APDUError)
 		}
 
-		if apdu.DataType == network.ComplexAck && apdu.ServiceType == network.ServiceConfirmedReadPropertyMultiple {
+		if apdu.DataType.IsType(network.ComplexAck) && apdu.ServiceType == network.ServiceConfirmedReadPropertyMultiple {
 			data := apdu.Payload.(*services.ReadPropertyMultiple).Data
 			return data, nil
 		}
@@ -464,10 +464,10 @@ func (c *Client) WriteProperty(ctx context.Context, device bacnet.Device, writeP
 	select {
 	case apdu := <-wrChan:
 		//Todo: ensure response validity, ensure conversion cannot panic
-		if apdu.DataType == network.Error {
+		if apdu.DataType.IsType(network.Error) {
 			return *apdu.Payload.(*services.APDUError)
 		}
-		if apdu.DataType == network.SimpleAck && apdu.ServiceType == network.ServiceConfirmedWriteProperty {
+		if apdu.DataType.IsType(network.SimpleAck) && apdu.ServiceType == network.ServiceConfirmedWriteProperty {
 			return nil
 		}
 		return errors.New("invalid answer")

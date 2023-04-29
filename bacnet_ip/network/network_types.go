@@ -179,88 +179,6 @@ func (npdu *NPDU) UnmarshalBinary(data []byte) error {
 	return nil
 }
 
-// //go:generate stringer -type=PDUType
-type PDUType byte
-
-// TODO: Maybe do from 0 to 7
-const (
-	ConfirmedServiceRequest   PDUType = 0
-	UnconfirmedServiceRequest PDUType = 0x10
-	SimpleAck                 PDUType = 0x20
-	ComplexAck                PDUType = 0x30
-	SegmentAck                PDUType = 0x40
-	Error                     PDUType = 0x50
-	Reject                    PDUType = 0x60
-	Abort                     PDUType = 0x70
-)
-
-type ServiceType byte
-
-const (
-	ServiceUnconfirmedIAm               ServiceType = 0
-	ServiceUnconfirmedIHave             ServiceType = 1
-	ServiceUnconfirmedCOVNotification   ServiceType = 2
-	ServiceUnconfirmedEventNotification ServiceType = 3
-	ServiceUnconfirmedPrivateTransfer   ServiceType = 4
-	ServiceUnconfirmedTextMessage       ServiceType = 5
-	ServiceUnconfirmedTimeSync          ServiceType = 6
-	ServiceUnconfirmedWhoHas            ServiceType = 7
-	ServiceUnconfirmedWhoIs             ServiceType = 8
-	ServiceUnconfirmedUTCTimeSync       ServiceType = 9
-	ServiceUnconfirmedWriteGroup        ServiceType = 10
-	/* Other services to be added as they are defined. */
-	/* All choice values in this production are reserved */
-	/* for definition by ASHRAE. */
-	/* Proprietary extensions are made by using the */
-	/* UnconfirmedPrivateTransfer service. See Clause 23. */
-	MaxServiceUnconfirmed ServiceType = 11
-)
-
-const (
-	/* Alarm and Event Services */
-	ServiceConfirmedAcknowledgeAlarm     ServiceType = 0
-	ServiceConfirmedCOVNotification      ServiceType = 1
-	ServiceConfirmedEventNotification    ServiceType = 2
-	ServiceConfirmedGetAlarmSummary      ServiceType = 3
-	ServiceConfirmedGetEnrollmentSummary ServiceType = 4
-	ServiceConfirmedGetEventInformation  ServiceType = 29
-	ServiceConfirmedSubscribeCOV         ServiceType = 5
-	ServiceConfirmedSubscribeCOVProperty ServiceType = 28
-	ServiceConfirmedLifeSafetyOperation  ServiceType = 27
-	/* File Access Services */
-	ServiceConfirmedAtomicReadFile  ServiceType = 6
-	ServiceConfirmedAtomicWriteFile ServiceType = 7
-	/* Object Access Services */
-	ServiceConfirmedAddListElement        ServiceType = 8
-	ServiceConfirmedRemoveListElement     ServiceType = 9
-	ServiceConfirmedCreateObject          ServiceType = 10
-	ServiceConfirmedDeleteObject          ServiceType = 11
-	ServiceConfirmedReadProperty          ServiceType = 12
-	ServiceConfirmedReadPropConditional   ServiceType = 13
-	ServiceConfirmedReadPropertyMultiple  ServiceType = 14
-	ServiceConfirmedReadRange             ServiceType = 26
-	ServiceConfirmedWriteProperty         ServiceType = 15
-	ServiceConfirmedWritePropertyMultiple ServiceType = 16
-	/* Remote Device Management Services */
-	ServiceConfirmedDeviceCommunicationControl ServiceType = 17
-	ServiceConfirmedPrivateTransfer            ServiceType = 18
-	ServiceConfirmedTextMessage                ServiceType = 19
-	ServiceConfirmedReinitializeDevice         ServiceType = 20
-	/* Virtual Terminal Services */
-	ServiceConfirmedVTOpen  ServiceType = 21
-	ServiceConfirmedVTClose ServiceType = 22
-	ServiceConfirmedVTData  ServiceType = 23
-	/* Security Services */
-	ServiceConfirmedAuthenticate ServiceType = 24
-	ServiceConfirmedRequestKey   ServiceType = 25
-	/* Services added after 1995 */
-	/* readRange (26) see Object Access Services */
-	/* lifeSafetyOperation (27) see Alarm and Event Services */
-	/* subscribeCOVProperty (28) see Alarm and Event Services */
-	/* getEventInformation (29) see Alarm and Event Services */
-	//MaxBACnetConfirmedService ServiceType = 30
-)
-
 // Todo: support more complex APDU
 type APDU struct {
 	DataType    PDUType
@@ -280,7 +198,7 @@ type APDU struct {
 func (apdu APDU) MarshalBinary() ([]byte, error) {
 	b := &bytes.Buffer{}
 	b.WriteByte(byte(apdu.DataType))
-	if apdu.DataType == ConfirmedServiceRequest {
+	if apdu.DataType.IsType(ConfirmedServiceRequest) {
 		b.WriteByte(5) //Todo: Write other  control flag here
 		b.WriteByte(apdu.InvokeID)
 	}
@@ -302,7 +220,7 @@ func (apdu *APDU) UnmarshalBinary(data []byte) error {
 		return fmt.Errorf("read APDU DataType: %w", err)
 	}
 
-	if apdu.DataType == ComplexAck || apdu.DataType == SimpleAck || apdu.DataType == Error || apdu.DataType == Abort {
+	if apdu.DataType.SupportsInvokeID() {
 		apdu.InvokeID, err = buf.ReadByte()
 
 		if err != nil {
@@ -317,21 +235,20 @@ func (apdu *APDU) UnmarshalBinary(data []byte) error {
 		return fmt.Errorf("read APDU ServiceType: %w", err)
 	}
 
-	if apdu.DataType == UnconfirmedServiceRequest && apdu.ServiceType == ServiceUnconfirmedWhoIs {
+	if apdu.DataType.IsType(UnconfirmedServiceRequest) && apdu.ServiceType == ServiceUnconfirmedWhoIs {
 		apdu.Payload = &services.WhoIs{}
-	} else if apdu.DataType == UnconfirmedServiceRequest && apdu.ServiceType == ServiceUnconfirmedIAm {
+	} else if apdu.DataType.IsType(UnconfirmedServiceRequest) && apdu.ServiceType == ServiceUnconfirmedIAm {
 		apdu.Payload = &services.IAm{}
-	} else if apdu.DataType == ComplexAck && apdu.ServiceType == ServiceConfirmedReadProperty {
+	} else if apdu.DataType.IsType(ComplexAck) && apdu.ServiceType == ServiceConfirmedReadProperty {
 		apdu.Payload = &services.ReadProperty{}
-	} else if apdu.DataType == ComplexAck && apdu.ServiceType == ServiceConfirmedReadPropertyMultiple {
+	} else if apdu.DataType.IsType(ComplexAck) && apdu.ServiceType == ServiceConfirmedReadPropertyMultiple {
 		apdu.Payload = &services.ReadPropertyMultiple{}
-	} else if apdu.DataType == Error {
+	} else if apdu.DataType.IsType(Error) {
 		apdu.Payload = &services.APDUError{}
-	} else if apdu.DataType == Abort {
+	} else if apdu.DataType.IsType(Abort) {
 		apdu.Payload = &services.APDUAbort{}
 	} else {
-		// Just pass raw data, decoding is not yet ready
-		apdu.Payload = &DataPayload{}
+		apdu.Payload = &DataPayload{} // Just pass raw data, decoding is not yet ready
 	}
 
 	return apdu.Payload.UnmarshalBinary(buf.Bytes())

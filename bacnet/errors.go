@@ -145,7 +145,7 @@ const (
 	AbortApduTooLong                   ErrorCode = 0x7B
 	AbortApplicationExceededReplyTime  ErrorCode = 0x7C
 	AbortOutOfResources                ErrorCode = 0x7D
-	AbortTsmTimeout                    ErrorCode = 0x7E
+	AbortTSMTimeout                    ErrorCode = 0x7E
 	AbortWindowSizeOutOfRange          ErrorCode = 0x7F
 	FileFull                           ErrorCode = 0x80
 	InconsistentConfiguration          ErrorCode = 0x81
