@@ -1,6 +1,6 @@
 package network
 
-// //go:generate stringer -type=PDUType
+//go:generate stringer -type=PDUType
 type PDUType byte
 
 const (
@@ -12,6 +12,7 @@ const (
 	Error                     PDUType = 0x50
 	Reject                    PDUType = 0x60
 	Abort                     PDUType = 0x70
+	AbortByServer             PDUType = 0x71
 )
 
 // IsType is necessary because if the type is abort, then the last bit can be

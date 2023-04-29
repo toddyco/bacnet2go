@@ -125,18 +125,20 @@ func main() {
 	//	Instance: bacnet.ObjectInstance(1),
 	//})
 
-	for range make([]int, 1) {
+	for x := range make([]int, 1) {
 		wg.Add(1)
 
-		//go func() {
+		go func(slp int) {
+			time.Sleep(time.Duration(slp*200) * time.Millisecond)
+
 			pts := []bacnet.ObjectID{
 				bacnet.ObjectID{
 					Type:     bacnet.AnalogInput,
 					Instance: bacnet.ObjectInstance(1),
 				},
 				bacnet.ObjectID{
-					Type:     bacnet.AnalogValue,
-					Instance: bacnet.ObjectInstance(175),
+					Type:     bacnet.MultiStateValue,
+					Instance: bacnet.ObjectInstance(76),
 				},
 				bacnet.ObjectID{
 					Type:     bacnet.AnalogValue,
@@ -199,7 +201,7 @@ func main() {
 			GetPointDetails(client, addr, 700900, pts)
 
 			wg.Done()
-		//}()
+		}(x)
 	}
 
 	wg.Wait()

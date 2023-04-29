@@ -3,8 +3,8 @@ package network
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
+	"github.com/toddyco/bacnet2go/bacnet_ip/client"
 	"github.com/toddyco/bacnet2go/bacnet_ip/services"
 
 	"github.com/toddyco/bacnet2go/bacnet"
@@ -310,8 +310,6 @@ func (bvlc BVLC) MarshalBinary() ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-var ErrNotBACnetIP = errors.New("packet isn't a baetyl-bacnet/IP payload ")
-
 func (bvlc *BVLC) UnmarshalBinary(data []byte) error {
 	buf := bytes.NewBuffer(data)
 	bvlcType, err := buf.ReadByte()
@@ -320,7 +318,7 @@ func (bvlc *BVLC) UnmarshalBinary(data []byte) error {
 	}
 	bvlc.Type = BVLCType(bvlcType)
 	if bvlc.Type != TypeBacnetIP {
-		return ErrNotBACnetIP
+		return client.ErrNotBACnetIP
 	}
 	bvlcFunc, err := buf.ReadByte()
 	if err != nil {

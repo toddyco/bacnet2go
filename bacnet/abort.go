@@ -1,5 +1,6 @@
 package bacnet
 
+//go:generate stringer -type=AbortReason
 type AbortReason uint8
 
 const (

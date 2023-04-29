@@ -167,7 +167,7 @@ func (c *Client) handleMessage(src *net.UDPAddr, b []byte) error {
 
 	err := bvlc.UnmarshalBinary(b)
 
-	if err != nil && errors.Is(err, network.ErrNotBACnetIP) {
+	if err != nil && errors.Is(err, ErrNotBACnetIP) {
 		return err
 	}
 
@@ -418,6 +418,14 @@ func (c *Client) ReadPropertyMultiple(ctx context.Context, device bacnet.Device,
 		// TODO: ensure response validity, ensure conversion cannot panic
 		if apdu.DataType.IsType(network.Error) {
 			return nil, *apdu.Payload.(*services.APDUError)
+		}
+
+		if apdu.DataType.IsType(network.Abort) {
+			if abort, ok := apdu.Payload.(*services.APDUAbort); ok {
+				if abort.Reason == bacnet.SegmentationNotSupportedAbortReason {
+					return nil, ErrSegmentationNotSupported
+				}
+			}
 		}
 
 		if apdu.DataType.IsType(network.ComplexAck) && apdu.ServiceType == network.ServiceConfirmedReadPropertyMultiple {
