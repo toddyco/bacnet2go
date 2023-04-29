@@ -9,6 +9,7 @@ type Tx struct {
 	APDU chan<- APDU
 	Ctx  context.Context
 }
+
 type Transactions struct {
 	sync.Mutex
 	currents     map[byte]Tx
