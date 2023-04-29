@@ -174,8 +174,8 @@ func (npdu *NPDU) UnmarshalBinary(data []byte) error {
 	} else {
 		npdu.APDU = &APDU{} // wipes out APDU from original request!
 		return npdu.APDU.UnmarshalBinary(buf.Bytes())
-
 	}
+
 	return nil
 }
 
@@ -297,18 +297,22 @@ func (apdu APDU) MarshalBinary() ([]byte, error) {
 func (apdu *APDU) UnmarshalBinary(data []byte) error {
 	buf := bytes.NewBuffer(data)
 	err := binary.Read(buf, binary.BigEndian, &apdu.DataType)
+
 	if err != nil {
 		return fmt.Errorf("read APDU DataType: %w", err)
 	}
-	if apdu.DataType == ComplexAck || apdu.DataType == SimpleAck || apdu.DataType == Error {
+
+	if apdu.DataType == ComplexAck || apdu.DataType == SimpleAck || apdu.DataType == Error || apdu.DataType == Abort {
 		apdu.InvokeID, err = buf.ReadByte()
+
 		if err != nil {
 			return err
 		}
 	}
 
-	//Todo refactor
+	// TODO: refactor
 	err = binary.Read(buf, binary.BigEndian, &apdu.ServiceType)
+
 	if err != nil {
 		return fmt.Errorf("read APDU ServiceType: %w", err)
 	}
@@ -329,8 +333,8 @@ func (apdu *APDU) UnmarshalBinary(data []byte) error {
 		// Just pass raw data, decoding is not yet ready
 		apdu.Payload = &DataPayload{}
 	}
-	return apdu.Payload.UnmarshalBinary(buf.Bytes())
 
+	return apdu.Payload.UnmarshalBinary(buf.Bytes())
 }
 
 type Payload interface {

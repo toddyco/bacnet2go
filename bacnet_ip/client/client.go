@@ -163,15 +163,20 @@ func (c *Client) listen() {
 
 func (c *Client) handleMessage(src *net.UDPAddr, b []byte) error {
 	var bvlc bacnet_ip.BVLC
+
 	err := bvlc.UnmarshalBinary(b)
+
 	if err != nil && errors.Is(err, bacnet_ip.ErrNotBACnetIP) {
 		return err
 	}
+
 	apdu := bvlc.NPDU.APDU
+
 	if apdu == nil {
 		c.Logger.Info(fmt.Sprintf("Received network packet %+v", bvlc.NPDU))
 		return nil
 	}
+
 	c.subscriptions.RLock()
 
 	if c.subscriptions.f != nil {
@@ -184,9 +189,11 @@ func (c *Client) handleMessage(src *net.UDPAddr, b []byte) error {
 	if apdu.DataType == bacnet_ip.ComplexAck || apdu.DataType == bacnet_ip.SimpleAck || apdu.DataType == bacnet_ip.Error || apdu.DataType == bacnet_ip.Abort {
 		invokeID := bvlc.NPDU.APDU.InvokeID
 		tx, ok := c.transactions.GetTransaction(invokeID)
+
 		if !ok {
 			return fmt.Errorf("no transaction found for id %d", invokeID)
 		}
+
 		select {
 		case tx.APDU <- *apdu:
 			return nil
