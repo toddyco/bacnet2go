@@ -14,13 +14,13 @@ const (
 	Abort                     PDUType = 0x70
 )
 
-// IsType is necessary because if the type is abort, then the 8th bit can be
+// IsType is necessary because if the type is abort, then the last bit can be
 // a 1 or 0, so simply doing an equivalency check for the PDUType with one of
 // the above constants is not sufficient.
 func (pt PDUType) IsType(t PDUType) bool {
-	return pt&t == t
+	return pt>>4 == t>>4
 }
 
 func (pt PDUType) SupportsInvokeID() bool {
-	return pt == SimpleAck || pt == ComplexAck || pt == Error || pt.IsType(Abort)
+	return pt.IsType(SimpleAck) || pt.IsType(ComplexAck) || pt.IsType(Error) || pt.IsType(Abort)
 }
