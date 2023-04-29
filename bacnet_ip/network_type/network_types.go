@@ -1,4 +1,4 @@
-package bacnet_ip
+package network_type
 
 import (
 	"bytes"

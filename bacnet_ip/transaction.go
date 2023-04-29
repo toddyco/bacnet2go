@@ -2,11 +2,12 @@ package bacnet_ip
 
 import (
 	"context"
+	"github.com/toddyco/bacnet2go/bacnet_ip/network_type"
 	"sync"
 )
 
 type Tx struct {
-	APDU chan<- APDU
+	APDU chan<- network_type.APDU
 	Ctx  context.Context
 }
 
@@ -41,7 +42,7 @@ func (t *Transactions) FreeID(id byte) {
 // nolint: revive
 // SetTransaction set up the channel passed as parameter as a callback for the baetyl-bacnet response.
 // All call to SetTransaction must be followed by a StopTransaction to prevent leaks
-func (t *Transactions) SetTransaction(id byte, apdu chan<- APDU, ctx context.Context) {
+func (t *Transactions) SetTransaction(id byte, apdu chan<- network_type.APDU, ctx context.Context) {
 	t.Lock()
 	defer t.Unlock()
 	t.currents[id] = Tx{
