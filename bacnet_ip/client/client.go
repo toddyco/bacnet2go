@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/toddyco/bacnet2go/bacnet_ip"
+	"github.com/toddyco/bacnet2go/bacnet_ip/const"
 	"github.com/toddyco/bacnet2go/bacnet_ip/network"
 	"github.com/toddyco/bacnet2go/bacnet_ip/services"
 	"net"
@@ -25,6 +26,9 @@ type Client struct {
 	subscriptions    *Subscriptions
 	transactions     *bacnet_ip.Transactions
 	Logger           Logger
+
+	ctx        context.Context
+	cancelFunc context.CancelFunc
 }
 
 type Subscriptions struct {
@@ -47,22 +51,37 @@ func broadcastAddr(n *net.IPNet) (net.IP, error) {
 // and network interface (eth0 for example). If Port if 0, the default
 // baetyl-bacnet port is used
 func NewClient(netInterface string, port int) (*Client, error) {
-	c := &Client{subscriptions: &Subscriptions{}, transactions: bacnet_ip.NewTransactions(), Logger: NoOpLogger{}}
+	ctx, cancel := context.WithCancel(context.Background())
+
+	c := &Client{
+		subscriptions: &Subscriptions{},
+		transactions:  bacnet_ip.NewTransactions(),
+		Logger:        NoOpLogger{},
+		ctx:           ctx,
+		cancelFunc:    cancel,
+	}
+
 	i, err := net.InterfaceByName(netInterface)
+
 	if err != nil {
 		return nil, fmt.Errorf("interface %s: %w", netInterface, err)
 	}
+
 	if port == 0 {
 		port = DefaultUDPPort
 	}
+
 	c.udpPort = port
 	addrs, err := i.Addrs()
+
 	if err != nil {
 		return nil, err
 	}
+
 	if len(addrs) == 0 {
 		return nil, fmt.Errorf("interface %s has no addresses", netInterface)
 	}
+
 	for _, adr := range addrs {
 		ip, ipnet, err := net.ParseCIDR(adr.String())
 		if err != nil {
@@ -79,6 +98,7 @@ func NewClient(netInterface string, port int) (*Client, error) {
 			break
 		}
 	}
+
 	if c.ipAddress == nil {
 		return nil, fmt.Errorf("no IPv4 address assigned to interface %s", netInterface)
 	}
@@ -87,26 +107,40 @@ func NewClient(netInterface string, port int) (*Client, error) {
 		IP:   net.IPv4zero,
 		Port: c.udpPort,
 	})
+
 	if err != nil {
 		return nil, err
 	}
+
 	c.udp = conn
 	go c.listen()
 	return c, nil
 }
 
+// NewClientByIp
 func NewClientByIp(ip string, port int) (*Client, error) {
-	c := &Client{subscriptions: &Subscriptions{}, transactions: bacnet_ip.NewTransactions(), Logger: NoOpLogger{}}
+	ctx, cancel := context.WithCancel(context.Background())
+
+	c := &Client{
+		subscriptions: &Subscriptions{},
+		transactions:  bacnet_ip.NewTransactions(),
+		Logger:        NoOpLogger{},
+		ctx:           ctx,
+		cancelFunc:    cancel,
+	}
+
 	if port == 0 {
 		port = DefaultUDPPort
 	}
+
 	c.udpPort = port
 	c.ipAddress = net.ParseIP(ip)
-
 	addr, err := net.InterfaceAddrs()
+
 	if err != nil {
 		return nil, err
 	}
+
 	for _, ad := range addr {
 		if ipNet, ok := ad.(*net.IPNet); ok {
 			if ipNet.Contains(c.ipAddress) {
@@ -119,6 +153,7 @@ func NewClientByIp(ip string, port int) (*Client, error) {
 			}
 		}
 	}
+
 	if c.broadcastAddress == nil {
 		return nil, errors.New("broadcast address not found")
 	}
@@ -127,9 +162,11 @@ func NewClientByIp(ip string, port int) (*Client, error) {
 		IP:   net.IPv4zero,
 		Port: c.udpPort,
 	})
+
 	if err != nil {
 		return nil, err
 	}
+
 	c.udp = conn
 	go c.listen()
 	return c, nil
@@ -137,7 +174,8 @@ func NewClientByIp(ip string, port int) (*Client, error) {
 
 // listen for incoming baetyl-bacnet packets.
 func (c *Client) listen() {
-	// Todo: allow close client
+	var done bool
+
 	for {
 		b := make([]byte, 2048)
 		i, addr, err := c.udp.ReadFromUDP(b)
@@ -159,15 +197,38 @@ func (c *Client) listen() {
 				c.Logger.Error("handle msg: ", err)
 			}
 		}()
+
+		select {
+		case <-c.ctx.Done():
+			done = true
+		default:
+
+		}
+
+		if done {
+			break
+		}
 	}
 }
 
+// Context
+func (c *Client) Context() context.Context {
+	return c.ctx
+}
+
+// Close
+func (c *Client) Close() {
+	c.cancelFunc()
+	c.udp.Close()
+}
+
+// handleMessage
 func (c *Client) handleMessage(src *net.UDPAddr, b []byte) error {
 	var bvlc network.BVLC
 
 	err := bvlc.UnmarshalBinary(b)
 
-	if err != nil && errors.Is(err, ErrNotBACnetIP) {
+	if err != nil && errors.Is(err, _const.ErrNotBACnetIP) {
 		return err
 	}
 
@@ -259,6 +320,7 @@ func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]bacnet.Dev
 		bvlc network.BVLC
 		src  net.UDPAddr
 	})
+
 	c.subscriptions.Lock()
 	// TODO:  add errgroup ?, ensure all f are done and not blocked
 	c.subscriptions.f = func(bvlc network.BVLC, src net.UDPAddr) {
@@ -341,6 +403,7 @@ func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]bacnet.Dev
 func (c *Client) ReadProperty(ctx context.Context, device bacnet.Device, readProp services.ReadProperty) (interface{}, error) {
 	invokeID := c.transactions.GetID()
 	defer c.transactions.FreeID(invokeID)
+
 	npdu := network.NPDU{
 		Version:               network.Version1,
 		IsNetworkLayerMessage: false,
@@ -359,10 +422,13 @@ func (c *Client) ReadProperty(ctx context.Context, device bacnet.Device, readPro
 			Payload:     &readProp,
 		},
 	}
+
 	rChan := make(chan network.APDU)
 	c.transactions.SetTransaction(invokeID, rChan, ctx)
 	defer c.transactions.StopTransaction(invokeID)
+
 	_, err := c.send(npdu)
+
 	if err != nil {
 		return nil, err
 	}
@@ -387,6 +453,7 @@ func (c *Client) ReadProperty(ctx context.Context, device bacnet.Device, readPro
 func (c *Client) ReadPropertyMultiple(ctx context.Context, device bacnet.Device, readProp services.ReadPropertyMultiple) (interface{}, error) {
 	invokeID := c.transactions.GetID()
 	defer c.transactions.FreeID(invokeID)
+
 	npdu := network.NPDU{
 		Version:               network.Version1,
 		IsNetworkLayerMessage: false,
@@ -405,10 +472,13 @@ func (c *Client) ReadPropertyMultiple(ctx context.Context, device bacnet.Device,
 			Payload:     &readProp,
 		},
 	}
+
 	rChan := make(chan network.APDU)
 	c.transactions.SetTransaction(invokeID, rChan, ctx)
 	defer c.transactions.StopTransaction(invokeID)
+
 	_, err := c.send(npdu)
+
 	if err != nil {
 		return nil, err
 	}
@@ -423,7 +493,7 @@ func (c *Client) ReadPropertyMultiple(ctx context.Context, device bacnet.Device,
 		if apdu.DataType.IsType(network.Abort) {
 			if abort, ok := apdu.Payload.(*services.APDUAbort); ok {
 				if abort.Reason == bacnet.SegmentationNotSupportedAbortReason {
-					return nil, ErrSegmentationNotSupported
+					return nil, _const.ErrSegmentationNotSupported
 				}
 			}
 		}
@@ -443,6 +513,7 @@ func (c *Client) ReadPropertyMultiple(ctx context.Context, device bacnet.Device,
 func (c *Client) WriteProperty(ctx context.Context, device bacnet.Device, writeProp services.WriteProperty) error {
 	invokeID := c.transactions.GetID()
 	defer c.transactions.FreeID(invokeID)
+
 	npdu := network.NPDU{
 		Version:               network.Version1,
 		IsNetworkLayerMessage: false,
@@ -461,10 +532,13 @@ func (c *Client) WriteProperty(ctx context.Context, device bacnet.Device, writeP
 			Payload:     &writeProp,
 		},
 	}
+
 	wrChan := make(chan network.APDU)
 	c.transactions.SetTransaction(invokeID, wrChan, ctx)
 	defer c.transactions.StopTransaction(invokeID)
+
 	_, err := c.send(npdu)
+
 	if err != nil {
 		return err
 	}

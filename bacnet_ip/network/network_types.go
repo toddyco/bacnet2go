@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/toddyco/bacnet2go/bacnet_ip/client"
+	"github.com/toddyco/bacnet2go/bacnet_ip/const"
 	"github.com/toddyco/bacnet2go/bacnet_ip/services"
 
 	"github.com/toddyco/bacnet2go/bacnet"
@@ -318,7 +318,7 @@ func (bvlc *BVLC) UnmarshalBinary(data []byte) error {
 	}
 	bvlc.Type = BVLCType(bvlcType)
 	if bvlc.Type != TypeBacnetIP {
-		return client.ErrNotBACnetIP
+		return _const.ErrNotBACnetIP
 	}
 	bvlcFunc, err := buf.ReadByte()
 	if err != nil {
