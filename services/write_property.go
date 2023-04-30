@@ -1,15 +1,15 @@
 package services
 
 import (
-	"github.com/toddyco/bacnet2go/bac_specs"
 	"github.com/toddyco/bacnet2go/internal/encoding"
+	"github.com/toddyco/bacnet2go/specs"
 )
 
 type WriteProperty struct {
-	ObjectID      bac_specs.ObjectID
-	Property      bac_specs.PropertyIdentifier
-	PropertyValue bac_specs.PropertyValue
-	Priority      bac_specs.PriorityList
+	ObjectID      specs.ObjectID
+	Property      specs.PropertyIdentifier
+	PropertyValue specs.PropertyValue
+	Priority      specs.PriorityList
 }
 
 func (wp WriteProperty) MarshalBinary() ([]byte, error) {

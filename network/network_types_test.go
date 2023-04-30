@@ -1,11 +1,11 @@
 package network
 
 import (
-	"github.com/toddyco/bacnet2go/bac_ip/services"
+	services2 "github.com/toddyco/bacnet2go/services"
+	"github.com/toddyco/bacnet2go/specs"
 	"testing"
 
 	"github.com/matryer/is"
-	"github.com/toddyco/bacnet2go/bac_specs"
 )
 
 func TestFullEncodingAndCoherency(t *testing.T) {
@@ -25,13 +25,13 @@ func TestFullEncodingAndCoherency(t *testing.T) {
 					APDU: &APDU{
 						DataType:    UnconfirmedServiceRequest,
 						ServiceType: ServiceUnconfirmedWhoIs,
-						Payload: &services.ReadProperty{
-							ObjectID: bac_specs.ObjectID{
-								Type:     bac_specs.AnalogInput,
+						Payload: &services2.ReadProperty{
+							ObjectID: specs.ObjectID{
+								Type:     specs.AnalogInput,
 								Instance: 300184,
 							},
-							PropertyID: bac_specs.PropertyIdentifier{
-								Type: bac_specs.PresentValue,
+							PropertyID: specs.PropertyIdentifier{
+								Type: specs.PresentValue,
 							},
 						},
 					},
@@ -48,22 +48,22 @@ func TestFullEncodingAndCoherency(t *testing.T) {
 					IsNetworkLayerMessage: false,
 					ExpectingReply:        false,
 					Priority:              Normal,
-					Destination: &bac_specs.Address{
+					Destination: &specs.Address{
 						Net: 0xffff,
 						Adr: []byte{},
 					},
-					Source:   &bac_specs.Address{},
+					Source:   &specs.Address{},
 					HopCount: 255,
 					APDU: &APDU{
 						DataType:    UnconfirmedServiceRequest,
 						ServiceType: ServiceUnconfirmedIAm,
-						Payload: &services.IAm{
-							ObjectID: bac_specs.ObjectID{
+						Payload: &services2.IAm{
+							ObjectID: specs.ObjectID{
 								Type:     8,
 								Instance: 30185,
 							},
 							MaxApduLength:       1476,
-							SegmentationSupport: bac_specs.SegmentationSupportBoth,
+							SegmentationSupport: specs.SegmentationSupportBoth,
 							VendorID:            364,
 						},
 					},

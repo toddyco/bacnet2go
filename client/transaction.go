@@ -1,8 +1,8 @@
-package bac_ip
+package client
 
 import (
 	"context"
-	"github.com/toddyco/bacnet2go/bac_ip/network"
+	"github.com/toddyco/bacnet2go/network"
 	"sync"
 )
 

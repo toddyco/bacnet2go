@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/toddyco/bacnet2go/bac_ip/client"
-	"github.com/toddyco/bacnet2go/bac_ip/services"
-	"github.com/toddyco/bacnet2go/bac_specs"
+	"github.com/toddyco/bacnet2go/client"
+	services2 "github.com/toddyco/bacnet2go/services"
+	"github.com/toddyco/bacnet2go/specs"
 	"net"
 	"sync"
 	"time"
@@ -43,7 +43,7 @@ func main() {
 
 	//a, _ := hex.DecodeString("00d0db000300")
 
-	addr := bac_specs.Address{
+	addr := specs.Address{
 		Mac: []byte{ip[0], ip[1], ip[2], ip[3], 0xba, 0xc0},
 		Net: 0,
 		Adr: []byte{},
@@ -138,70 +138,70 @@ func main() {
 			//	return
 			//}
 
-			pts := []bac_specs.ObjectID{
-				bac_specs.ObjectID{
-					Type:     bac_specs.AnalogInput,
-					Instance: bac_specs.ObjectInstance(1),
+			pts := []specs.ObjectID{
+				specs.ObjectID{
+					Type:     specs.AnalogInput,
+					Instance: specs.ObjectInstance(1),
 				},
-				bac_specs.ObjectID{
-					Type:     bac_specs.MultiStateValue,
-					Instance: bac_specs.ObjectInstance(76),
+				specs.ObjectID{
+					Type:     specs.MultiStateValue,
+					Instance: specs.ObjectInstance(76),
 				},
-				bac_specs.ObjectID{
-					Type:     bac_specs.AnalogValue,
-					Instance: bac_specs.ObjectInstance(176),
+				specs.ObjectID{
+					Type:     specs.AnalogValue,
+					Instance: specs.ObjectInstance(176),
 				},
-				bac_specs.ObjectID{
-					Type:     bac_specs.AnalogValue,
-					Instance: bac_specs.ObjectInstance(177),
+				specs.ObjectID{
+					Type:     specs.AnalogValue,
+					Instance: specs.ObjectInstance(177),
 				},
-				bac_specs.ObjectID{
-					Type:     bac_specs.AnalogValue,
-					Instance: bac_specs.ObjectInstance(178),
+				specs.ObjectID{
+					Type:     specs.AnalogValue,
+					Instance: specs.ObjectInstance(178),
 				},
-				bac_specs.ObjectID{
-					Type:     bac_specs.AnalogValue,
-					Instance: bac_specs.ObjectInstance(179),
+				specs.ObjectID{
+					Type:     specs.AnalogValue,
+					Instance: specs.ObjectInstance(179),
 				},
-				bac_specs.ObjectID{
-					Type:     bac_specs.AnalogValue,
-					Instance: bac_specs.ObjectInstance(180),
+				specs.ObjectID{
+					Type:     specs.AnalogValue,
+					Instance: specs.ObjectInstance(180),
 				},
-				bac_specs.ObjectID{
-					Type:     bac_specs.AnalogValue,
-					Instance: bac_specs.ObjectInstance(181),
+				specs.ObjectID{
+					Type:     specs.AnalogValue,
+					Instance: specs.ObjectInstance(181),
 				},
-				bac_specs.ObjectID{
-					Type:     bac_specs.AnalogValue,
-					Instance: bac_specs.ObjectInstance(182),
+				specs.ObjectID{
+					Type:     specs.AnalogValue,
+					Instance: specs.ObjectInstance(182),
 				},
-				bac_specs.ObjectID{
-					Type:     bac_specs.AnalogInput,
-					Instance: bac_specs.ObjectInstance(183),
+				specs.ObjectID{
+					Type:     specs.AnalogInput,
+					Instance: specs.ObjectInstance(183),
 				},
-				bac_specs.ObjectID{
-					Type:     bac_specs.AnalogValue,
-					Instance: bac_specs.ObjectInstance(184),
+				specs.ObjectID{
+					Type:     specs.AnalogValue,
+					Instance: specs.ObjectInstance(184),
 				},
-				bac_specs.ObjectID{
-					Type:     bac_specs.AnalogValue,
-					Instance: bac_specs.ObjectInstance(185),
+				specs.ObjectID{
+					Type:     specs.AnalogValue,
+					Instance: specs.ObjectInstance(185),
 				},
-				bac_specs.ObjectID{
-					Type:     bac_specs.AnalogValue,
-					Instance: bac_specs.ObjectInstance(186),
+				specs.ObjectID{
+					Type:     specs.AnalogValue,
+					Instance: specs.ObjectInstance(186),
 				},
-				bac_specs.ObjectID{
-					Type:     bac_specs.AnalogValue,
-					Instance: bac_specs.ObjectInstance(187),
+				specs.ObjectID{
+					Type:     specs.AnalogValue,
+					Instance: specs.ObjectInstance(187),
 				},
-				bac_specs.ObjectID{
-					Type:     bac_specs.AnalogValue,
-					Instance: bac_specs.ObjectInstance(188),
+				specs.ObjectID{
+					Type:     specs.AnalogValue,
+					Instance: specs.ObjectInstance(188),
 				},
-				bac_specs.ObjectID{
-					Type:     bac_specs.AnalogValue,
-					Instance: bac_specs.ObjectInstance(189),
+				specs.ObjectID{
+					Type:     specs.AnalogValue,
+					Instance: specs.ObjectInstance(189),
 				},
 			}
 
@@ -228,7 +228,7 @@ func main() {
 
 }
 
-func GetPresentValue(c *client.Client, addr bac_specs.Address, instanceID int, objectID bac_specs.ObjectID) {
+func GetPresentValue(c *client.Client, addr specs.Address, instanceID int, objectID specs.ObjectID) {
 	ctx, cancel := context.WithTimeout(context.Background(), 800000*time.Second)
 	defer cancel()
 
@@ -237,10 +237,10 @@ func GetPresentValue(c *client.Client, addr bac_specs.Address, instanceID int, o
 	//    Port: bacip.DefaultUDPPort,
 	//})
 
-	val, err := c.ReadProperty(ctx, makeDevice(addr, instanceID), services.ReadProperty{
+	val, err := c.ReadProperty(ctx, makeDevice(addr, instanceID), services2.ReadProperty{
 		ObjectID: objectID,
-		PropertyID: bac_specs.PropertyIdentifier{
-			Type: bac_specs.PresentValue,
+		PropertyID: specs.PropertyIdentifier{
+			Type: specs.PresentValue,
 		},
 		Data: nil,
 	})
@@ -249,7 +249,7 @@ func GetPresentValue(c *client.Client, addr bac_specs.Address, instanceID int, o
 	fmt.Printf("%v \n", err)
 }
 
-func GetPointList(c *client.Client, addr bac_specs.Address, instanceID int) {
+func GetPointList(c *client.Client, addr specs.Address, instanceID int) {
 	ctx, cancel := context.WithTimeout(context.Background(), 800000*time.Second)
 	defer cancel()
 
@@ -258,13 +258,13 @@ func GetPointList(c *client.Client, addr bac_specs.Address, instanceID int) {
 	//    Port: bacip.DefaultUDPPort,
 	//})
 
-	val, err := c.ReadProperty(ctx, makeDevice(addr, instanceID), services.ReadProperty{
-		ObjectID: bac_specs.ObjectID{
-			Type:     bac_specs.BacnetDevice,
-			Instance: bac_specs.ObjectInstance(instanceID),
+	val, err := c.ReadProperty(ctx, makeDevice(addr, instanceID), services2.ReadProperty{
+		ObjectID: specs.ObjectID{
+			Type:     specs.BacnetDevice,
+			Instance: specs.ObjectInstance(instanceID),
 		},
-		PropertyID: bac_specs.PropertyIdentifier{
-			Type: bac_specs.ObjectList,
+		PropertyID: specs.PropertyIdentifier{
+			Type: specs.ObjectList,
 		},
 		Data: nil,
 	})
@@ -275,18 +275,18 @@ func GetPointList(c *client.Client, addr bac_specs.Address, instanceID int) {
 	time.Sleep(5)
 }
 
-func GetPointDetails(c *client.Client, addr bac_specs.Address, instanceID int, objectIDs []bac_specs.ObjectID) {
+func GetPointDetails(c *client.Client, addr specs.Address, instanceID int, objectIDs []specs.ObjectID) {
 	ctx, cancel := context.WithTimeout(context.Background(), 800000*time.Second)
 	defer cancel()
 
-	val, err := c.ReadPropertyMultiple(ctx, makeDevice(addr, instanceID), services.ReadPropertyMultiple{
+	val, err := c.ReadPropertyMultiple(ctx, makeDevice(addr, instanceID), services2.ReadPropertyMultiple{
 		ObjectIDs: objectIDs,
-		PropertyIDs: [][]bac_specs.PropertyIdentifier{{
-			bac_specs.PropertyIdentifier{
-				Type: bac_specs.ObjectName,
+		PropertyIDs: [][]specs.PropertyIdentifier{{
+			specs.PropertyIdentifier{
+				Type: specs.ObjectName,
 			},
-			bac_specs.PropertyIdentifier{
-				Type: bac_specs.PresentValue,
+			specs.PropertyIdentifier{
+				Type: specs.PresentValue,
 			},
 			//bacnet.PropertyIdentifier{
 			//	Type: bacnet.Description,
@@ -304,11 +304,11 @@ func GetPointDetails(c *client.Client, addr bac_specs.Address, instanceID int, o
 	time.Sleep(5)
 }
 
-func makeDevice(addr bac_specs.Address, instanceID int) bac_specs.Device {
-	return bac_specs.Device{
-		ID: bac_specs.ObjectID{
-			Type:     bac_specs.BacnetDevice,
-			Instance: bac_specs.ObjectInstance(instanceID),
+func makeDevice(addr specs.Address, instanceID int) specs.Device {
+	return specs.Device{
+		ID: specs.ObjectID{
+			Type:     specs.BacnetDevice,
+			Instance: specs.ObjectInstance(instanceID),
 		},
 		MaxApdu:      0,
 		Segmentation: 0,

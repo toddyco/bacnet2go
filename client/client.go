@@ -6,15 +6,13 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/toddyco/bacnet2go/bac_ip"
-	"github.com/toddyco/bacnet2go/bac_ip/const"
-	"github.com/toddyco/bacnet2go/bac_ip/network"
-	"github.com/toddyco/bacnet2go/bac_ip/services"
+	"github.com/toddyco/bacnet2go/const"
+	network2 "github.com/toddyco/bacnet2go/network"
+	services2 "github.com/toddyco/bacnet2go/services"
+	"github.com/toddyco/bacnet2go/specs"
 	"net"
 	"sync"
 	"time"
-
-	"github.com/toddyco/bacnet2go/bac_specs"
 )
 
 type Client struct {
@@ -22,10 +20,10 @@ type Client struct {
 	ipAddress        net.IP
 	broadcastAddress net.IP
 	udpPort          int
-	udp              *net.UDPConn
-	subscriptions    *Subscriptions
-	transactions     *bac_ip.Transactions
-	Logger           Logger
+	udp           *net.UDPConn
+	subscriptions *Subscriptions
+	transactions  *Transactions
+	Logger        Logger
 
 	ctx        context.Context
 	cancelFunc context.CancelFunc
@@ -33,7 +31,7 @@ type Client struct {
 
 type Subscriptions struct {
 	sync.RWMutex
-	f func(network.BVLC, net.UDPAddr)
+	f func(network2.BVLC, net.UDPAddr)
 }
 
 const DefaultUDPPort = 47808
@@ -55,7 +53,7 @@ func NewClient(netInterface string, port int) (*Client, error) {
 
 	c := &Client{
 		subscriptions: &Subscriptions{},
-		transactions:  bac_ip.NewTransactions(),
+		transactions:  NewTransactions(),
 		Logger:        NoOpLogger{},
 		ctx:           ctx,
 		cancelFunc:    cancel,
@@ -123,7 +121,7 @@ func NewClientByIP(ip string, port int) (*Client, error) {
 
 	c := &Client{
 		subscriptions: &Subscriptions{},
-		transactions:  bac_ip.NewTransactions(),
+		transactions:  NewTransactions(),
 		Logger:        NoOpLogger{},
 		ctx:           ctx,
 		cancelFunc:    cancel,
@@ -224,7 +222,7 @@ func (c *Client) Close() {
 
 // handleMessage
 func (c *Client) handleMessage(src *net.UDPAddr, b []byte) error {
-	var bvlc network.BVLC
+	var bvlc network2.BVLC
 
 	err := bvlc.UnmarshalBinary(b)
 
@@ -268,21 +266,21 @@ func (c *Client) handleMessage(src *net.UDPAddr, b []byte) error {
 }
 
 func (c *Client) IAm() error {
-	npdu := network.NPDU{
-		Version:               network.Version1,
+	npdu := network2.NPDU{
+		Version:               network2.Version1,
 		IsNetworkLayerMessage: false,
 		ExpectingReply:        false,
-		Priority:              network.Normal,
-		Destination: &bac_specs.Address{
+		Priority:              network2.Normal,
+		Destination: &specs.Address{
 			Net: uint16(0xffff),
 		},
 		Source: nil,
-		APDU: &network.APDU{
-			DataType:    network.UnconfirmedServiceRequest,
-			ServiceType: network.ServiceUnconfirmedIAm,
-			Payload: &services.IAm{
-				ObjectID: bac_specs.ObjectID{
-					Type:     bac_specs.BacnetDevice,
+		APDU: &network2.APDU{
+			DataType:    network2.UnconfirmedServiceRequest,
+			ServiceType: network2.ServiceUnconfirmedIAm,
+			Payload: &services2.IAm{
+				ObjectID: specs.ObjectID{
+					Type:     specs.BacnetDevice,
 					Instance: 99999,
 				},
 				MaxApduLength:       0,
@@ -298,34 +296,34 @@ func (c *Client) IAm() error {
 	return err
 }
 
-func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]bac_specs.Device, error) {
-	npdu := network.NPDU{
-		Version:               network.Version1,
+func (c *Client) WhoIs(data services2.WhoIs, timeout time.Duration) ([]specs.Device, error) {
+	npdu := network2.NPDU{
+		Version:               network2.Version1,
 		IsNetworkLayerMessage: false,
 		ExpectingReply:        false,
-		Priority:              network.Normal,
-		Destination: &bac_specs.Address{
+		Priority:              network2.Normal,
+		Destination: &specs.Address{
 			Net: uint16(0xffff),
 		},
 		Source: nil,
-		APDU: &network.APDU{
-			DataType:    network.UnconfirmedServiceRequest,
-			ServiceType: network.ServiceUnconfirmedWhoIs,
+		APDU: &network2.APDU{
+			DataType:    network2.UnconfirmedServiceRequest,
+			ServiceType: network2.ServiceUnconfirmedWhoIs,
 			Payload:     &data,
 		},
 		HopCount: 255,
 	}
 
 	rChan := make(chan struct {
-		bvlc network.BVLC
+		bvlc network2.BVLC
 		src  net.UDPAddr
 	})
 
 	c.subscriptions.Lock()
 	// TODO:  add errgroup ?, ensure all f are done and not blocked
-	c.subscriptions.f = func(bvlc network.BVLC, src net.UDPAddr) {
+	c.subscriptions.f = func(bvlc network2.BVLC, src net.UDPAddr) {
 		rChan <- struct {
-			bvlc network.BVLC
+			bvlc network2.BVLC
 			src  net.UDPAddr
 		}{
 			bvlc: bvlc,
@@ -343,14 +341,14 @@ func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]bac_specs.
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
 	// Use a set to deduplicate results
-	set := map[services.IAm]bac_specs.Address{}
+	set := map[services2.IAm]specs.Address{}
 
 	for {
 		select {
 		case <-timer.C:
-			result := []bac_specs.Device{}
+			result := []specs.Device{}
 			for iam, addr := range set {
-				result = append(result, bac_specs.Device{
+				result = append(result, specs.Device{
 					ID:           iam.ObjectID,
 					MaxApdu:      iam.MaxApduLength,
 					Segmentation: iam.SegmentationSupport,
@@ -363,9 +361,9 @@ func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]bac_specs.
 			// clean/filter  network answers here
 			apdu := r.bvlc.NPDU.APDU
 			if apdu != nil {
-				if apdu.DataType.IsType(network.UnconfirmedServiceRequest) &&
-					apdu.ServiceType == network.ServiceUnconfirmedIAm {
-					iam, ok := apdu.Payload.(*services.IAm)
+				if apdu.DataType.IsType(network2.UnconfirmedServiceRequest) &&
+					apdu.ServiceType == network2.ServiceUnconfirmedIAm {
+					iam, ok := apdu.Payload.(*services2.IAm)
 					if !ok {
 						return nil, fmt.Errorf("unexpected payload type %T", apdu.Payload)
 					}
@@ -375,9 +373,9 @@ func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]bac_specs.
 					// the IAM response is in broadcast mode, we might
 					// receive an answer triggered by an other whois
 					if data.High != nil && data.Low != nil {
-						if iam.ObjectID.Instance >= bac_specs.ObjectInstance(*data.Low) &&
-							iam.ObjectID.Instance <= bac_specs.ObjectInstance(*data.High) {
-							addr := bac_specs.AddressFromUDP(r.src)
+						if iam.ObjectID.Instance >= specs.ObjectInstance(*data.Low) &&
+							iam.ObjectID.Instance <= specs.ObjectInstance(*data.High) {
+							addr := specs.AddressFromUDP(r.src)
 							if r.bvlc.NPDU.Source != nil {
 								addr.Net = r.bvlc.NPDU.Source.Net
 								addr.Adr = r.bvlc.NPDU.Source.Adr
@@ -385,7 +383,7 @@ func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]bac_specs.
 							set[*iam] = *addr
 						}
 					} else {
-						addr := bac_specs.AddressFromUDP(r.src)
+						addr := specs.AddressFromUDP(r.src)
 						if r.bvlc.NPDU.Source != nil {
 							addr.Net = r.bvlc.NPDU.Source.Net
 							addr.Adr = r.bvlc.NPDU.Source.Adr
@@ -400,30 +398,30 @@ func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]bac_specs.
 }
 
 // ReadProperty reads a single property from an object
-func (c *Client) ReadProperty(ctx context.Context, device bac_specs.Device, readProp services.ReadProperty) (interface{}, error) {
+func (c *Client) ReadProperty(ctx context.Context, device specs.Device, readProp services2.ReadProperty) (interface{}, error) {
 	invokeID := c.transactions.GetID()
 	defer c.transactions.FreeID(invokeID)
 
-	npdu := network.NPDU{
-		Version:               network.Version1,
+	npdu := network2.NPDU{
+		Version:               network2.Version1,
 		IsNetworkLayerMessage: false,
 		ExpectingReply:        true,
-		Priority:              network.Normal,
+		Priority:              network2.Normal,
 		Destination:           &device.Addr,
-		Source: bac_specs.AddressFromUDP(net.UDPAddr{
+		Source: specs.AddressFromUDP(net.UDPAddr{
 			IP:   c.ipAddress,
 			Port: c.udpPort,
 		}),
 		HopCount: 255,
-		APDU: &network.APDU{
-			DataType:    network.ConfirmedServiceRequest,
-			ServiceType: network.ServiceConfirmedReadProperty,
+		APDU: &network2.APDU{
+			DataType:    network2.ConfirmedServiceRequest,
+			ServiceType: network2.ServiceConfirmedReadProperty,
 			InvokeID:    invokeID,
 			Payload:     &readProp,
 		},
 	}
 
-	rChan := make(chan network.APDU)
+	rChan := make(chan network2.APDU)
 	c.transactions.SetTransaction(invokeID, rChan, ctx)
 	defer c.transactions.StopTransaction(invokeID)
 
@@ -436,11 +434,11 @@ func (c *Client) ReadProperty(ctx context.Context, device bac_specs.Device, read
 	select {
 	case apdu := <-rChan:
 		// TODO: ensure response validity, ensure conversion cannot panic
-		if apdu.DataType.IsType(network.Error) {
-			return nil, *apdu.Payload.(*services.APDUError)
+		if apdu.DataType.IsType(network2.Error) {
+			return nil, *apdu.Payload.(*services2.APDUError)
 		}
-		if apdu.DataType.IsType(network.ComplexAck) && apdu.ServiceType == network.ServiceConfirmedReadProperty {
-			data := apdu.Payload.(*services.ReadProperty).Data
+		if apdu.DataType.IsType(network2.ComplexAck) && apdu.ServiceType == network2.ServiceConfirmedReadProperty {
+			data := apdu.Payload.(*services2.ReadProperty).Data
 			return data, nil
 		}
 		return nil, errors.New("invalid answer")
@@ -450,30 +448,30 @@ func (c *Client) ReadProperty(ctx context.Context, device bac_specs.Device, read
 }
 
 // ReadPropertyMultiple reads multiple properties from one or more objects
-func (c *Client) ReadPropertyMultiple(ctx context.Context, device bac_specs.Device, readProp services.ReadPropertyMultiple) (interface{}, error) {
+func (c *Client) ReadPropertyMultiple(ctx context.Context, device specs.Device, readProp services2.ReadPropertyMultiple) (interface{}, error) {
 	invokeID := c.transactions.GetID()
 	defer c.transactions.FreeID(invokeID)
 
-	npdu := network.NPDU{
-		Version:               network.Version1,
+	npdu := network2.NPDU{
+		Version:               network2.Version1,
 		IsNetworkLayerMessage: false,
 		ExpectingReply:        true,
-		Priority:              network.Normal,
+		Priority:              network2.Normal,
 		Destination:           &device.Addr,
-		Source: bac_specs.AddressFromUDP(net.UDPAddr{
+		Source: specs.AddressFromUDP(net.UDPAddr{
 			IP:   c.ipAddress,
 			Port: c.udpPort,
 		}),
 		HopCount: 255,
-		APDU: &network.APDU{
-			DataType:    network.ConfirmedServiceRequest,
-			ServiceType: network.ServiceConfirmedReadPropertyMultiple,
+		APDU: &network2.APDU{
+			DataType:    network2.ConfirmedServiceRequest,
+			ServiceType: network2.ServiceConfirmedReadPropertyMultiple,
 			InvokeID:    invokeID,
 			Payload:     &readProp,
 		},
 	}
 
-	rChan := make(chan network.APDU)
+	rChan := make(chan network2.APDU)
 	c.transactions.SetTransaction(invokeID, rChan, ctx)
 	defer c.transactions.StopTransaction(invokeID)
 
@@ -486,20 +484,20 @@ func (c *Client) ReadPropertyMultiple(ctx context.Context, device bac_specs.Devi
 	select {
 	case apdu := <-rChan:
 		// TODO: ensure response validity, ensure conversion cannot panic
-		if apdu.DataType.IsType(network.Error) {
-			return nil, *apdu.Payload.(*services.APDUError)
+		if apdu.DataType.IsType(network2.Error) {
+			return nil, *apdu.Payload.(*services2.APDUError)
 		}
 
-		if apdu.DataType.IsType(network.Abort) {
-			if abort, ok := apdu.Payload.(*services.APDUAbort); ok {
-				if abort.Reason == bac_specs.SegmentationNotSupportedAbortReason {
+		if apdu.DataType.IsType(network2.Abort) {
+			if abort, ok := apdu.Payload.(*services2.APDUAbort); ok {
+				if abort.Reason == specs.SegmentationNotSupportedAbortReason {
 					return nil, _const.ErrSegmentationNotSupported
 				}
 			}
 		}
 
-		if apdu.DataType.IsType(network.ComplexAck) && apdu.ServiceType == network.ServiceConfirmedReadPropertyMultiple {
-			data := apdu.Payload.(*services.ReadPropertyMultiple).Data
+		if apdu.DataType.IsType(network2.ComplexAck) && apdu.ServiceType == network2.ServiceConfirmedReadPropertyMultiple {
+			data := apdu.Payload.(*services2.ReadPropertyMultiple).Data
 			return data, nil
 		}
 
@@ -510,30 +508,30 @@ func (c *Client) ReadPropertyMultiple(ctx context.Context, device bac_specs.Devi
 }
 
 // WriteProperty writes a value to a property
-func (c *Client) WriteProperty(ctx context.Context, device bac_specs.Device, writeProp services.WriteProperty) error {
+func (c *Client) WriteProperty(ctx context.Context, device specs.Device, writeProp services2.WriteProperty) error {
 	invokeID := c.transactions.GetID()
 	defer c.transactions.FreeID(invokeID)
 
-	npdu := network.NPDU{
-		Version:               network.Version1,
+	npdu := network2.NPDU{
+		Version:               network2.Version1,
 		IsNetworkLayerMessage: false,
 		ExpectingReply:        true,
-		Priority:              network.Normal,
+		Priority:              network2.Normal,
 		Destination:           &device.Addr,
-		Source: bac_specs.AddressFromUDP(net.UDPAddr{
+		Source: specs.AddressFromUDP(net.UDPAddr{
 			IP:   c.ipAddress,
 			Port: c.udpPort,
 		}),
 		HopCount: 255,
-		APDU: &network.APDU{
-			DataType:    network.ConfirmedServiceRequest,
-			ServiceType: network.ServiceConfirmedWriteProperty,
+		APDU: &network2.APDU{
+			DataType:    network2.ConfirmedServiceRequest,
+			ServiceType: network2.ServiceConfirmedWriteProperty,
 			InvokeID:    invokeID,
 			Payload:     &writeProp,
 		},
 	}
 
-	wrChan := make(chan network.APDU)
+	wrChan := make(chan network2.APDU)
 	c.transactions.SetTransaction(invokeID, wrChan, ctx)
 	defer c.transactions.StopTransaction(invokeID)
 
@@ -546,10 +544,10 @@ func (c *Client) WriteProperty(ctx context.Context, device bac_specs.Device, wri
 	select {
 	case apdu := <-wrChan:
 		//Todo: ensure response validity, ensure conversion cannot panic
-		if apdu.DataType.IsType(network.Error) {
-			return *apdu.Payload.(*services.APDUError)
+		if apdu.DataType.IsType(network2.Error) {
+			return *apdu.Payload.(*services2.APDUError)
 		}
-		if apdu.DataType.IsType(network.SimpleAck) && apdu.ServiceType == network.ServiceConfirmedWriteProperty {
+		if apdu.DataType.IsType(network2.SimpleAck) && apdu.ServiceType == network2.ServiceConfirmedWriteProperty {
 			return nil
 		}
 		return errors.New("invalid answer")
@@ -559,10 +557,10 @@ func (c *Client) WriteProperty(ctx context.Context, device bac_specs.Device, wri
 
 }
 
-func (c *Client) send(npdu network.NPDU) (int, error) {
-	bytes, err := network.BVLC{
-		Type:     network.TypeBacnetIP,
-		Function: network.BacFuncUnicast,
+func (c *Client) send(npdu network2.NPDU) (int, error) {
+	bytes, err := network2.BVLC{
+		Type:     network2.TypeBacnetIP,
+		Function: network2.BacFuncUnicast,
 		NPDU:     npdu,
 	}.MarshalBinary()
 
@@ -574,16 +572,16 @@ func (c *Client) send(npdu network.NPDU) (int, error) {
 		return 0, fmt.Errorf("destination baetyl-bacnet address should be not nil to send unicast")
 	}
 
-	addr := bac_specs.UDPFromAddress(*npdu.Destination)
+	addr := specs.UDPFromAddress(*npdu.Destination)
 
 	return c.udp.WriteToUDP(bytes, &addr)
 
 }
 
-func (c *Client) broadcast(npdu network.NPDU) (int, error) {
-	bytes, err := network.BVLC{
-		Type:     network.TypeBacnetIP,
-		Function: network.BacFuncBroadcast,
+func (c *Client) broadcast(npdu network2.NPDU) (int, error) {
+	bytes, err := network2.BVLC{
+		Type:     network2.TypeBacnetIP,
+		Function: network2.BacFuncBroadcast,
 		NPDU:     npdu,
 	}.MarshalBinary()
 	if err != nil {

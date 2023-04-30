@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/toddyco/bacnet2go/bac_ip/const"
-	"github.com/toddyco/bacnet2go/bac_ip/services"
-
-	"github.com/toddyco/bacnet2go/bac_specs"
+	"github.com/toddyco/bacnet2go/const"
+	services2 "github.com/toddyco/bacnet2go/services"
+	"github.com/toddyco/bacnet2go/specs"
 )
 
 type Version byte
@@ -31,8 +30,8 @@ type NPDU struct {
 	ExpectingReply        bool
 	Priority              NPDUPriority
 
-	Destination *bac_specs.Address
-	Source      *bac_specs.Address
+	Destination *specs.Address
+	Source      *specs.Address
 	HopCount    byte
 	// The two are only significant if IsNetworkLayerMessage is true
 	NetworkMessageType byte
@@ -118,7 +117,7 @@ func (npdu *NPDU) UnmarshalBinary(data []byte) error {
 	npdu.Priority = NPDUPriority(control & 0x3)
 
 	if control&(1<<5) > 0 {
-		npdu.Destination = &bac_specs.Address{}
+		npdu.Destination = &specs.Address{}
 		err := binary.Read(buf, binary.BigEndian, &npdu.Destination.Net)
 		if err != nil {
 			return fmt.Errorf("read NPDU dest Address.Net: %w", err)
@@ -136,7 +135,7 @@ func (npdu *NPDU) UnmarshalBinary(data []byte) error {
 	}
 
 	if control&(1<<3) > 0 {
-		npdu.Source = &bac_specs.Address{}
+		npdu.Source = &specs.Address{}
 		err := binary.Read(buf, binary.BigEndian, &npdu.Source.Net)
 		if err != nil {
 			return fmt.Errorf("read NPDU src Address.Net: %w", err)
@@ -236,17 +235,17 @@ func (apdu *APDU) UnmarshalBinary(data []byte) error {
 	}
 
 	if apdu.DataType.IsType(UnconfirmedServiceRequest) && apdu.ServiceType == ServiceUnconfirmedWhoIs {
-		apdu.Payload = &services.WhoIs{}
+		apdu.Payload = &services2.WhoIs{}
 	} else if apdu.DataType.IsType(UnconfirmedServiceRequest) && apdu.ServiceType == ServiceUnconfirmedIAm {
-		apdu.Payload = &services.IAm{}
+		apdu.Payload = &services2.IAm{}
 	} else if apdu.DataType.IsType(ComplexAck) && apdu.ServiceType == ServiceConfirmedReadProperty {
-		apdu.Payload = &services.ReadProperty{}
+		apdu.Payload = &services2.ReadProperty{}
 	} else if apdu.DataType.IsType(ComplexAck) && apdu.ServiceType == ServiceConfirmedReadPropertyMultiple {
-		apdu.Payload = &services.ReadPropertyMultiple{}
+		apdu.Payload = &services2.ReadPropertyMultiple{}
 	} else if apdu.DataType.IsType(Error) {
-		apdu.Payload = &services.APDUError{}
+		apdu.Payload = &services2.APDUError{}
 	} else if apdu.DataType.IsType(Abort) {
-		apdu.Payload = &services.APDUAbort{}
+		apdu.Payload = &services2.APDUAbort{}
 	} else {
 		apdu.Payload = &DataPayload{} // Just pass raw data, decoding is not yet ready
 	}

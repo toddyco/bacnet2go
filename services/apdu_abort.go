@@ -2,12 +2,12 @@ package services
 
 import (
 	"fmt"
-	"github.com/toddyco/bacnet2go/bac_specs"
 	"github.com/toddyco/bacnet2go/internal/encoding"
+	"github.com/toddyco/bacnet2go/specs"
 )
 
 type APDUAbort struct {
-	Reason bac_specs.AbortReason
+	Reason specs.AbortReason
 }
 
 func (a APDUAbort) Error() string {
