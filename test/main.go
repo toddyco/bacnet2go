@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/toddyco/bacnet2go/client"
 	services2 "github.com/toddyco/bacnet2go/services"
@@ -48,6 +49,8 @@ func main() {
 		Net: 0,
 		Adr: []byte{},
 	}
+
+	GetPointList(c, addr, 700900)
 
 	for range make([]int, 50) {
 		//GetPresentValue(c, addr, 700900, bacnet.ObjectID{
@@ -118,8 +121,6 @@ func main() {
 
 	wg := sync.WaitGroup{}
 
-	//GetPointList(c, addr, 700900)
-
 	//GetPresentValue(c, addr, 700900, bacnet.ObjectID{
 	//	Type:     bacnet.AnalogInput,
 	//	Instance: bacnet.ObjectInstance(1),
@@ -139,42 +140,42 @@ func main() {
 			//}
 
 			pts := []specs.ObjectID{
-				specs.ObjectID{
-					Type:     specs.AnalogInput,
-					Instance: specs.ObjectInstance(1),
-				},
-				specs.ObjectID{
-					Type:     specs.MultiStateValue,
-					Instance: specs.ObjectInstance(76),
-				},
-				specs.ObjectID{
-					Type:     specs.AnalogValue,
-					Instance: specs.ObjectInstance(176),
-				},
-				specs.ObjectID{
-					Type:     specs.AnalogValue,
-					Instance: specs.ObjectInstance(177),
-				},
-				specs.ObjectID{
-					Type:     specs.AnalogValue,
-					Instance: specs.ObjectInstance(178),
-				},
-				specs.ObjectID{
-					Type:     specs.AnalogValue,
-					Instance: specs.ObjectInstance(179),
-				},
-				specs.ObjectID{
-					Type:     specs.AnalogValue,
-					Instance: specs.ObjectInstance(180),
-				},
-				specs.ObjectID{
-					Type:     specs.AnalogValue,
-					Instance: specs.ObjectInstance(181),
-				},
-				specs.ObjectID{
-					Type:     specs.AnalogValue,
-					Instance: specs.ObjectInstance(182),
-				},
+				//specs.ObjectID{
+				//	Type:     specs.AnalogInput,
+				//	Instance: specs.ObjectInstance(1),
+				//},
+				//specs.ObjectID{
+				//	Type:     specs.MultiStateValue,
+				//	Instance: specs.ObjectInstance(76),
+				//},
+				//specs.ObjectID{
+				//	Type:     specs.AnalogValue,
+				//	Instance: specs.ObjectInstance(176),
+				//},
+				//specs.ObjectID{
+				//	Type:     specs.AnalogValue,
+				//	Instance: specs.ObjectInstance(177),
+				//},
+				//specs.ObjectID{
+				//	Type:     specs.AnalogValue,
+				//	Instance: specs.ObjectInstance(178),
+				//},
+				//specs.ObjectID{
+				//	Type:     specs.AnalogValue,
+				//	Instance: specs.ObjectInstance(179),
+				//},
+				//specs.ObjectID{
+				//	Type:     specs.AnalogValue,
+				//	Instance: specs.ObjectInstance(180),
+				//},
+				//specs.ObjectID{
+				//	Type:     specs.AnalogValue,
+				//	Instance: specs.ObjectInstance(181),
+				//},
+				//specs.ObjectID{
+				//	Type:     specs.AnalogValue,
+				//	Instance: specs.ObjectInstance(182),
+				//},
 				specs.ObjectID{
 					Type:     specs.AnalogInput,
 					Instance: specs.ObjectInstance(183),
@@ -272,7 +273,10 @@ func GetPointList(c *client.Client, addr specs.Address, instanceID int) {
 	fmt.Printf("%v \n", val)
 	fmt.Printf("%v \n", err)
 
-	time.Sleep(5)
+	b, err := json.Marshal(val)
+
+	fmt.Printf("%s \n", b)
+	fmt.Printf("%v \n", err)
 }
 
 func GetPointDetails(c *client.Client, addr specs.Address, instanceID int, objectIDs []specs.ObjectID) {
@@ -283,16 +287,19 @@ func GetPointDetails(c *client.Client, addr specs.Address, instanceID int, objec
 		ObjectIDs: objectIDs,
 		PropertyIDs: [][]specs.PropertyIdentifier{{
 			specs.PropertyIdentifier{
-				Type: specs.ObjectName,
+				Type: specs.ObjectIdentifier,
 			},
 			specs.PropertyIdentifier{
 				Type: specs.PresentValue,
 			},
-			//bacnet.PropertyIdentifier{
-			//	Type: bacnet.Description,
+			//specs.PropertyIdentifier{
+			//	Type: specs.ObjectName,
 			//},
-			//bacnet.PropertyIdentifier{
-			//	Type: bacnet.Units,
+			//specs.PropertyIdentifier{
+			//	Type: specs.Description,
+			//},
+			//specs.PropertyIdentifier{
+			//	Type: specs.Units,
 			//},
 		}},
 		Data: nil,
@@ -301,7 +308,10 @@ func GetPointDetails(c *client.Client, addr specs.Address, instanceID int, objec
 	fmt.Printf("%v \n", val)
 	fmt.Printf("%v \n", err)
 
-	time.Sleep(5)
+	b, err := json.Marshal(val)
+
+	fmt.Printf("%s \n", b)
+	fmt.Printf("%v \n", err)
 }
 
 func makeDevice(addr specs.Address, instanceID int) specs.Device {

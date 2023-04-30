@@ -438,7 +438,7 @@ func (c *Client) ReadProperty(ctx context.Context, device specs.Device, readProp
 			return nil, *apdu.Payload.(*services2.APDUError)
 		}
 		if apdu.DataType.IsType(network2.ComplexAck) && apdu.ServiceType == network2.ServiceConfirmedReadProperty {
-			data := apdu.Payload.(*services2.ReadProperty).Data
+			data := apdu.Payload.(*services2.ReadProperty)
 			return data, nil
 		}
 		return nil, errors.New("invalid answer")
@@ -497,7 +497,7 @@ func (c *Client) ReadPropertyMultiple(ctx context.Context, device specs.Device, 
 		}
 
 		if apdu.DataType.IsType(network2.ComplexAck) && apdu.ServiceType == network2.ServiceConfirmedReadPropertyMultiple {
-			data := apdu.Payload.(*services2.ReadPropertyMultiple).Data
+			data := apdu.Payload.(*services2.ReadPropertyMultiple)
 			return data, nil
 		}
 

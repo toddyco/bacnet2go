@@ -101,7 +101,8 @@ func (d *Decoder) ContextValue(expectedTagID byte, val *uint32) error {
 
 // ContextObjectID read a (context)tag / value pair where the value
 // type is an unsigned int
-// If ErrorIncorrectTag is set, the internal buffer cursor is ready to read again the same tag.
+//
+// If an ErrorIncorrectTagID error is set, unread() will be called automatically.
 func (d *Decoder) ContextObjectID(expectedTagID byte, objectID *specs.ObjectID) {
 	if d.err != nil {
 		return
@@ -143,7 +144,7 @@ func (d *Decoder) ContextOpening(tagNumber byte) error {
 	_, tag, err := decodeTag(d.buf)
 
 	if tag.ID != tagNumber {
-		d.err = fmt.Errorf("decode expected opening tag %d but got %d", tagNumber, tag.ID)
+		d.err = ErrorIncorrectTagID{Expected: tagNumber, Got: tag.ID}
 		return d.err
 	}
 
@@ -164,7 +165,7 @@ func (d *Decoder) ContextClosing(tagNumber byte) error {
 	_, tag, err := decodeTag(d.buf)
 
 	if tag.ID != tagNumber {
-		d.err = fmt.Errorf("decode expected closing tag %d but got %d", tagNumber, tag.ID)
+		d.err = ErrorIncorrectTagID{Expected: tagNumber, Got: tag.ID}
 		return d.err
 	}
 
@@ -213,7 +214,7 @@ func (d *Decoder) AppData(v interface{}, prereadTag *tag) {
 	}
 
 	if tag.Context {
-		d.err = errors.New("decode AppData: unexpected context tag ")
+		d.err = errors.New("decode AppData: unexpected context tag")
 		return
 	}
 
@@ -322,6 +323,9 @@ func isEmptyInterface(rv reflect.Value) bool {
 
 const utf8Encoding = byte(0)
 
+// ContextAbstractType
+//
+// If an ErrorIncorrectTagID error is set, unread() will be called automatically.
 func (d *Decoder) ContextAbstractType(expectedTagNumber byte, v interface{}) {
 	if d.err != nil {
 		return
@@ -338,7 +342,7 @@ func (d *Decoder) ContextAbstractType(expectedTagNumber byte, v interface{}) {
 
 	// Tag read/decode #1
 	{
-		_, tag, err := decodeTag(d.buf)
+		length, tag, err := decodeTag(d.buf)
 
 		if err != nil {
 			d.err = fmt.Errorf("decoder abstractType: read opening tag: %w", err)
@@ -352,6 +356,11 @@ func (d *Decoder) ContextAbstractType(expectedTagNumber byte, v interface{}) {
 
 		if tag.ID != expectedTagNumber {
 			d.err = ErrorIncorrectTagID{Expected: expectedTagNumber, Got: tag.ID}
+			err := d.unread(length)
+			if err != nil {
+				d.err = err
+			}
+			return
 		}
 	}
 

@@ -32,16 +32,18 @@ func (rp *ReadProperty) UnmarshalBinary(data []byte) error {
 	decoder.ContextValue(1, &val)
 	rp.PropertyID.Type = specs.PropertyType(val)
 	rp.PropertyID.ArrayIndex = new(uint32)
+
+	// Tag 2 is an array index tag; it's optional
 	decoder.ContextValue(2, rp.PropertyID.ArrayIndex)
 	err := decoder.Error()
 	var e encoding.ErrorIncorrectTagID
 
-	// The array index tag is optional, per BACnet spec
 	if err != nil && errors.As(err, &e) {
 		rp.PropertyID.ArrayIndex = nil
 		decoder.ResetError()
 	}
 
+	// Tag 3 is an expected return value.
 	decoder.ContextAbstractType(3, &rp.Data)
 	return decoder.Error()
 }
