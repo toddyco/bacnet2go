@@ -117,8 +117,8 @@ func NewClient(netInterface string, port int) (*Client, error) {
 	return c, nil
 }
 
-// NewClientByIp
-func NewClientByIp(ip string, port int) (*Client, error) {
+// NewClientByIP
+func NewClientByIP(ip string, port int) (*Client, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	c := &Client{
