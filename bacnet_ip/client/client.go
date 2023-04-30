@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/toddyco/bacnet2go/bacnet"
+	"github.com/toddyco/bacnet2go/specs"
 )
 
 type Client struct {
@@ -273,7 +273,7 @@ func (c *Client) IAm() error {
 		IsNetworkLayerMessage: false,
 		ExpectingReply:        false,
 		Priority:              network.Normal,
-		Destination: &bacnet.Address{
+		Destination: &specs.Address{
 			Net: uint16(0xffff),
 		},
 		Source: nil,
@@ -281,8 +281,8 @@ func (c *Client) IAm() error {
 			DataType:    network.UnconfirmedServiceRequest,
 			ServiceType: network.ServiceUnconfirmedIAm,
 			Payload: &services.IAm{
-				ObjectID: bacnet.ObjectID{
-					Type:     bacnet.BacnetDevice,
+				ObjectID: specs.ObjectID{
+					Type:     specs.BacnetDevice,
 					Instance: 99999,
 				},
 				MaxApduLength:       0,
@@ -298,13 +298,13 @@ func (c *Client) IAm() error {
 	return err
 }
 
-func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]bacnet.Device, error) {
+func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]specs.Device, error) {
 	npdu := network.NPDU{
 		Version:               network.Version1,
 		IsNetworkLayerMessage: false,
 		ExpectingReply:        false,
 		Priority:              network.Normal,
-		Destination: &bacnet.Address{
+		Destination: &specs.Address{
 			Net: uint16(0xffff),
 		},
 		Source: nil,
@@ -343,14 +343,14 @@ func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]bacnet.Dev
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
 	// Use a set to deduplicate results
-	set := map[services.IAm]bacnet.Address{}
+	set := map[services.IAm]specs.Address{}
 
 	for {
 		select {
 		case <-timer.C:
-			result := []bacnet.Device{}
+			result := []specs.Device{}
 			for iam, addr := range set {
-				result = append(result, bacnet.Device{
+				result = append(result, specs.Device{
 					ID:           iam.ObjectID,
 					MaxApdu:      iam.MaxApduLength,
 					Segmentation: iam.SegmentationSupport,
@@ -375,9 +375,9 @@ func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]bacnet.Dev
 					// the IAM response is in broadcast mode, we might
 					// receive an answer triggered by an other whois
 					if data.High != nil && data.Low != nil {
-						if iam.ObjectID.Instance >= bacnet.ObjectInstance(*data.Low) &&
-							iam.ObjectID.Instance <= bacnet.ObjectInstance(*data.High) {
-							addr := bacnet.AddressFromUDP(r.src)
+						if iam.ObjectID.Instance >= specs.ObjectInstance(*data.Low) &&
+							iam.ObjectID.Instance <= specs.ObjectInstance(*data.High) {
+							addr := specs.AddressFromUDP(r.src)
 							if r.bvlc.NPDU.Source != nil {
 								addr.Net = r.bvlc.NPDU.Source.Net
 								addr.Adr = r.bvlc.NPDU.Source.Adr
@@ -385,7 +385,7 @@ func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]bacnet.Dev
 							set[*iam] = *addr
 						}
 					} else {
-						addr := bacnet.AddressFromUDP(r.src)
+						addr := specs.AddressFromUDP(r.src)
 						if r.bvlc.NPDU.Source != nil {
 							addr.Net = r.bvlc.NPDU.Source.Net
 							addr.Adr = r.bvlc.NPDU.Source.Adr
@@ -400,7 +400,7 @@ func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]bacnet.Dev
 }
 
 // ReadProperty reads a single property from an object
-func (c *Client) ReadProperty(ctx context.Context, device bacnet.Device, readProp services.ReadProperty) (interface{}, error) {
+func (c *Client) ReadProperty(ctx context.Context, device specs.Device, readProp services.ReadProperty) (interface{}, error) {
 	invokeID := c.transactions.GetID()
 	defer c.transactions.FreeID(invokeID)
 
@@ -410,7 +410,7 @@ func (c *Client) ReadProperty(ctx context.Context, device bacnet.Device, readPro
 		ExpectingReply:        true,
 		Priority:              network.Normal,
 		Destination:           &device.Addr,
-		Source: bacnet.AddressFromUDP(net.UDPAddr{
+		Source: specs.AddressFromUDP(net.UDPAddr{
 			IP:   c.ipAddress,
 			Port: c.udpPort,
 		}),
@@ -450,7 +450,7 @@ func (c *Client) ReadProperty(ctx context.Context, device bacnet.Device, readPro
 }
 
 // ReadPropertyMultiple reads multiple properties from one or more objects
-func (c *Client) ReadPropertyMultiple(ctx context.Context, device bacnet.Device, readProp services.ReadPropertyMultiple) (interface{}, error) {
+func (c *Client) ReadPropertyMultiple(ctx context.Context, device specs.Device, readProp services.ReadPropertyMultiple) (interface{}, error) {
 	invokeID := c.transactions.GetID()
 	defer c.transactions.FreeID(invokeID)
 
@@ -460,7 +460,7 @@ func (c *Client) ReadPropertyMultiple(ctx context.Context, device bacnet.Device,
 		ExpectingReply:        true,
 		Priority:              network.Normal,
 		Destination:           &device.Addr,
-		Source: bacnet.AddressFromUDP(net.UDPAddr{
+		Source: specs.AddressFromUDP(net.UDPAddr{
 			IP:   c.ipAddress,
 			Port: c.udpPort,
 		}),
@@ -492,7 +492,7 @@ func (c *Client) ReadPropertyMultiple(ctx context.Context, device bacnet.Device,
 
 		if apdu.DataType.IsType(network.Abort) {
 			if abort, ok := apdu.Payload.(*services.APDUAbort); ok {
-				if abort.Reason == bacnet.SegmentationNotSupportedAbortReason {
+				if abort.Reason == specs.SegmentationNotSupportedAbortReason {
 					return nil, _const.ErrSegmentationNotSupported
 				}
 			}
@@ -510,7 +510,7 @@ func (c *Client) ReadPropertyMultiple(ctx context.Context, device bacnet.Device,
 }
 
 // WriteProperty writes a value to a property
-func (c *Client) WriteProperty(ctx context.Context, device bacnet.Device, writeProp services.WriteProperty) error {
+func (c *Client) WriteProperty(ctx context.Context, device specs.Device, writeProp services.WriteProperty) error {
 	invokeID := c.transactions.GetID()
 	defer c.transactions.FreeID(invokeID)
 
@@ -520,7 +520,7 @@ func (c *Client) WriteProperty(ctx context.Context, device bacnet.Device, writeP
 		ExpectingReply:        true,
 		Priority:              network.Normal,
 		Destination:           &device.Addr,
-		Source: bacnet.AddressFromUDP(net.UDPAddr{
+		Source: specs.AddressFromUDP(net.UDPAddr{
 			IP:   c.ipAddress,
 			Port: c.udpPort,
 		}),
@@ -574,7 +574,7 @@ func (c *Client) send(npdu network.NPDU) (int, error) {
 		return 0, fmt.Errorf("destination baetyl-bacnet address should be not nil to send unicast")
 	}
 
-	addr := bacnet.UDPFromAddress(*npdu.Destination)
+	addr := specs.UDPFromAddress(*npdu.Destination)
 
 	return c.udp.WriteToUDP(bytes, &addr)
 

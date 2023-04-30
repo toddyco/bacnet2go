@@ -1,4 +1,4 @@
-package bacnet
+package specs
 
 // PropertyType is the type of an object property
 type PropertyType uint32

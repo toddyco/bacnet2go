@@ -1,14 +1,14 @@
 package services
 
 import (
-	"github.com/toddyco/bacnet2go/bacnet"
 	"github.com/toddyco/bacnet2go/internal/encoding"
+	"github.com/toddyco/bacnet2go/specs"
 )
 
 type IAm struct {
-	ObjectID            bacnet.ObjectID
+	ObjectID            specs.ObjectID
 	MaxApduLength       uint32
-	SegmentationSupport bacnet.SegmentationSupport
+	SegmentationSupport specs.SegmentationSupport
 	VendorID            uint32
 }
 

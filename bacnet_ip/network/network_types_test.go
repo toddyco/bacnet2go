@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/matryer/is"
-	"github.com/toddyco/bacnet2go/bacnet"
+	"github.com/toddyco/bacnet2go/specs"
 )
 
 func TestFullEncodingAndCoherency(t *testing.T) {
@@ -26,12 +26,12 @@ func TestFullEncodingAndCoherency(t *testing.T) {
 						DataType:    UnconfirmedServiceRequest,
 						ServiceType: ServiceUnconfirmedWhoIs,
 						Payload: &services.ReadProperty{
-							ObjectID: bacnet.ObjectID{
-								Type:     bacnet.AnalogInput,
+							ObjectID: specs.ObjectID{
+								Type:     specs.AnalogInput,
 								Instance: 300184,
 							},
-							PropertyID: bacnet.PropertyIdentifier{
-								Type: bacnet.PresentValue,
+							PropertyID: specs.PropertyIdentifier{
+								Type: specs.PresentValue,
 							},
 						},
 					},
@@ -48,22 +48,22 @@ func TestFullEncodingAndCoherency(t *testing.T) {
 					IsNetworkLayerMessage: false,
 					ExpectingReply:        false,
 					Priority:              Normal,
-					Destination: &bacnet.Address{
+					Destination: &specs.Address{
 						Net: 0xffff,
 						Adr: []byte{},
 					},
-					Source:   &bacnet.Address{},
+					Source:   &specs.Address{},
 					HopCount: 255,
 					APDU: &APDU{
 						DataType:    UnconfirmedServiceRequest,
 						ServiceType: ServiceUnconfirmedIAm,
 						Payload: &services.IAm{
-							ObjectID: bacnet.ObjectID{
+							ObjectID: specs.ObjectID{
 								Type:     8,
 								Instance: 30185,
 							},
 							MaxApduLength:       1476,
-							SegmentationSupport: bacnet.SegmentationSupportBoth,
+							SegmentationSupport: specs.SegmentationSupportBoth,
 							VendorID:            364,
 						},
 					},

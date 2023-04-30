@@ -1,4 +1,4 @@
-package bacnet
+package specs
 
 // ErrorClass is the type of error send by an object after a request
 type ErrorClass uint16

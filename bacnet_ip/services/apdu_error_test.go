@@ -5,7 +5,7 @@ import (
     "testing"
 
     "github.com/matryer/is"
-    "github.com/toddyco/bacnet2go/bacnet"
+	"github.com/toddyco/bacnet2go/specs"
 )
 
 func TestWhoIsDec(t *testing.T) {
@@ -83,12 +83,12 @@ func TestIamEncodingAndCoherency(t *testing.T) {
 		{
 			data: "c4020075e92205c4910022016c",
 			iam: IAm{
-				ObjectID: bacnet.ObjectID{
+				ObjectID: specs.ObjectID{
 					Type:     8,
 					Instance: 30185,
 				},
 				MaxApduLength:       1476,
-				SegmentationSupport: bacnet.SegmentationSupportBoth,
+				SegmentationSupport: specs.SegmentationSupportBoth,
 				VendorID:            364,
 			},
 		},
@@ -116,12 +116,12 @@ func TestReadPropertyReq(t *testing.T) {
 		{
 			data: "0c00401fb91975",
 			rp: ReadProperty{
-				ObjectID: bacnet.ObjectID{
-					Type:     bacnet.AnalogOutput,
+				ObjectID: specs.ObjectID{
+					Type:     specs.AnalogOutput,
 					Instance: 8121,
 				},
-				PropertyID: bacnet.PropertyIdentifier{
-					Type: bacnet.Units,
+				PropertyID: specs.PropertyIdentifier{
+					Type: specs.Units,
 				},
 			},
 		},
@@ -144,12 +144,12 @@ func TestReadPropertyResp(t *testing.T) {
 		{
 			data: "0c00401fb919753e91623f",
 			rp: ReadProperty{
-				ObjectID: bacnet.ObjectID{
-					Type:     bacnet.AnalogOutput,
+				ObjectID: specs.ObjectID{
+					Type:     specs.AnalogOutput,
 					Instance: 8121,
 				},
-				PropertyID: bacnet.PropertyIdentifier{
-					Type: bacnet.Units,
+				PropertyID: specs.PropertyIdentifier{
+					Type: specs.Units,
 				},
 				Data: uint32(98),
 			},
@@ -174,14 +174,14 @@ func TestWritePropertyReq(t *testing.T) {
 		{
 			data: "0c0100000119553e91003f",
 			wp: WriteProperty{
-				ObjectID: bacnet.ObjectID{
-					Type:     bacnet.BinaryOutput,
+				ObjectID: specs.ObjectID{
+					Type:     specs.BinaryOutput,
 					Instance: 1,
 				},
-				Property: bacnet.PropertyIdentifier{
-					Type: bacnet.PresentValue,
+				Property: specs.PropertyIdentifier{
+					Type: specs.PresentValue,
 				},
-				PropertyValue: bacnet.PropertyValue{
+				PropertyValue: specs.PropertyValue{
 					Type:  0x09,
 					Value: 0,
 				},

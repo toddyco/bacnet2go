@@ -2,13 +2,13 @@ package services
 
 import (
 	"errors"
-	"github.com/toddyco/bacnet2go/bacnet"
 	"github.com/toddyco/bacnet2go/internal/encoding"
+	"github.com/toddyco/bacnet2go/specs"
 )
 
 type ReadProperty struct {
-	ObjectID   bacnet.ObjectID
-	PropertyID bacnet.PropertyIdentifier
+	ObjectID   specs.ObjectID
+	PropertyID specs.PropertyIdentifier
 	Data       interface{} // will contain the response
 }
 
@@ -30,7 +30,7 @@ func (rp *ReadProperty) UnmarshalBinary(data []byte) error {
 	decoder.ContextObjectID(0, &rp.ObjectID)
 	var val uint32
 	decoder.ContextValue(1, &val)
-	rp.PropertyID.Type = bacnet.PropertyType(val)
+	rp.PropertyID.Type = specs.PropertyType(val)
 	rp.PropertyID.ArrayIndex = new(uint32)
 	decoder.ContextValue(2, rp.PropertyID.ArrayIndex)
 	err := decoder.Error()

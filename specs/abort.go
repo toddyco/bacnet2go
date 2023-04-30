@@ -1,4 +1,4 @@
-package bacnet
+package specs
 
 //go:generate stringer -type=AbortReason
 type AbortReason uint8

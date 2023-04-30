@@ -2,19 +2,19 @@ package services
 
 import (
 	"errors"
-	"github.com/toddyco/bacnet2go/bacnet"
 	"github.com/toddyco/bacnet2go/internal/encoding"
+	"github.com/toddyco/bacnet2go/specs"
 )
 
 type ReadPropertyMultiple struct {
-	ObjectIDs   []bacnet.ObjectID
-	PropertyIDs [][]bacnet.PropertyIdentifier
+	ObjectIDs   []specs.ObjectID
+	PropertyIDs [][]specs.PropertyIdentifier
 	Data        [][]interface{} // will contain the response
 }
 
 type ObjectAndProperties struct {
-	ObjectID    bacnet.ObjectID
-	PropertyIDs []bacnet.PropertyIdentifier
+	ObjectID    specs.ObjectID
+	PropertyIDs []specs.PropertyIdentifier
 	Data        []interface{}
 }
 
@@ -38,8 +38,8 @@ func (rpm ReadPropertyMultiple) MarshalBinary() ([]byte, error) {
 }
 
 func (rpm *ReadPropertyMultiple) UnmarshalBinary(data []byte) error {
-	rpm.ObjectIDs = []bacnet.ObjectID{}
-	rpm.PropertyIDs = [][]bacnet.PropertyIdentifier{}
+	rpm.ObjectIDs = []specs.ObjectID{}
+	rpm.PropertyIDs = [][]specs.PropertyIdentifier{}
 	rpm.Data = [][]interface{}{}
 
 	var propIdx int
@@ -48,8 +48,8 @@ func (rpm *ReadPropertyMultiple) UnmarshalBinary(data []byte) error {
 
 	for { // Loop over objects
 		objAndProps := ObjectAndProperties{
-			ObjectID:    bacnet.ObjectID{},
-			PropertyIDs: []bacnet.PropertyIdentifier{},
+			ObjectID:    specs.ObjectID{},
+			PropertyIDs: []specs.PropertyIdentifier{},
 			Data:        []interface{}{},
 		}
 
@@ -73,10 +73,10 @@ func (rpm *ReadPropertyMultiple) UnmarshalBinary(data []byte) error {
 				break
 			}
 
-			objAndProps.PropertyIDs = append(objAndProps.PropertyIDs, bacnet.PropertyIdentifier{})
+			objAndProps.PropertyIDs = append(objAndProps.PropertyIDs, specs.PropertyIdentifier{})
 			objAndProps.Data = append(objAndProps.Data, nil)
 
-			objAndProps.PropertyIDs[propIdx].Type = bacnet.PropertyType(val)
+			objAndProps.PropertyIDs[propIdx].Type = specs.PropertyType(val)
 			objAndProps.PropertyIDs[propIdx].ArrayIndex = new(uint32)
 			decoder.ContextValue(3, objAndProps.PropertyIDs[propIdx].ArrayIndex)
 			err := decoder.Error()
