@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/toddyco/bacnet2go/specs"
+	"github.com/toddyco/bacnet2go/bac_specs"
 )
 
 const (
@@ -221,7 +221,7 @@ func (e *Encoder) ContextTypeTime(tagNumber byte, value uint32) {
 
 // ContextObjectID write a (context)tag / value pair where the value
 // type is an unsigned int
-func (e *Encoder) ContextObjectID(tagNumber byte, objectID specs.ObjectID) {
+func (e *Encoder) ContextObjectID(tagNumber byte, objectID bac_specs.ObjectID) {
 	if e.err != nil {
 		return
 	}
@@ -292,13 +292,13 @@ func (e *Encoder) AppData(v interface{}) {
 		t := tag{ID: applicationTagUnsignedInt, Value: uint32(length)}
 		encodeTag(e.buf, t)
 		unsigned(e.buf, val)
-	case specs.SegmentationSupport:
+	case bac_specs.SegmentationSupport:
 		v := uint32(val)
 		length := valueLength(v)
 		t := tag{ID: applicationTagEnumerated, Value: uint32(length)}
 		encodeTag(e.buf, t)
 		unsigned(e.buf, v)
-	case specs.ObjectID:
+	case bac_specs.ObjectID:
 		t := tag{ID: applicationTagObjectID, Value: 4}
 		encodeTag(e.buf, t)
 		v, err := val.Encode()
@@ -312,54 +312,54 @@ func (e *Encoder) AppData(v interface{}) {
 	}
 }
 
-func (e *Encoder) ContextAbstractType(tagNumber byte, v specs.PropertyValue) error {
+func (e *Encoder) ContextAbstractType(tagNumber byte, v bac_specs.PropertyValue) error {
 	encodeTag(e.buf, tag{ID: tagNumber, Context: true, Opening: true})
 
 	switch v.Type {
-	case specs.TypeNull:
+	case bac_specs.TypeNull:
 		e.ContextNull(byte(v.Type))
-	case specs.TypeBoolean:
+	case bac_specs.TypeBoolean:
 		val, ok := v.Value.(bool)
 		if !ok {
 			return fmt.Errorf("wrong value, value:[%v]", reflect.ValueOf(v.Value).Type())
 		}
 		e.ContextBoolean(byte(v.Type), val)
-	case specs.TypeUnsignedInt:
+	case bac_specs.TypeUnsignedInt:
 		val, ok := v.Value.(uint32)
 		if !ok {
 			return fmt.Errorf("wrong value, value:[%v]", reflect.ValueOf(v.Value).Type())
 		}
 		e.ContextUnsigned(byte(v.Type), val)
-	case specs.TypeSignedInt:
+	case bac_specs.TypeSignedInt:
 		val, ok := v.Value.(int32)
 		if !ok {
 			return fmt.Errorf("wrong value, value:[%v]", reflect.ValueOf(v.Value).Type())
 		}
 		e.ContextSigned(byte(v.Type), val)
-	case specs.TypeReal:
+	case bac_specs.TypeReal:
 		val, ok := v.Value.(float32)
 		if !ok {
 			return fmt.Errorf("wrong value, value:[%v]", reflect.ValueOf(v.Value).Type())
 		}
 		e.ContextTypeReal(byte(v.Type), val)
-	case specs.TypeDouble:
+	case bac_specs.TypeDouble:
 		val, ok := v.Value.(float32)
 		if !ok {
 			return fmt.Errorf("wrong value, value:[%v]", reflect.ValueOf(v.Value).Type())
 		}
 		e.ContextTypeDouble(byte(v.Type), val)
-	case specs.TypeOctetString:
-	case specs.TypeCharacterString:
-	case specs.TypeBitString:
-	case specs.TypeEnumerated:
+	case bac_specs.TypeOctetString:
+	case bac_specs.TypeCharacterString:
+	case bac_specs.TypeBitString:
+	case bac_specs.TypeEnumerated:
 		val, ok := v.Value.(uint32)
 		if !ok {
 			return fmt.Errorf("wrong value, value:[%v]", reflect.ValueOf(v.Value).Type())
 		}
 		e.ContextTypeEnumerated(byte(v.Type), val)
-	case specs.TypeDate:
-	case specs.TypeTime:
-	case specs.TypeObjectID:
+	case bac_specs.TypeDate:
+	case bac_specs.TypeTime:
+	case bac_specs.TypeObjectID:
 	default:
 		return fmt.Errorf("wrong Type. type:[%d]", v.Type)
 	}

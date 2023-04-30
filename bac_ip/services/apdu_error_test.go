@@ -5,7 +5,7 @@ import (
     "testing"
 
     "github.com/matryer/is"
-	"github.com/toddyco/bacnet2go/specs"
+	"github.com/toddyco/bacnet2go/bac_specs"
 )
 
 func TestWhoIsDec(t *testing.T) {
@@ -83,12 +83,12 @@ func TestIamEncodingAndCoherency(t *testing.T) {
 		{
 			data: "c4020075e92205c4910022016c",
 			iam: IAm{
-				ObjectID: specs.ObjectID{
+				ObjectID: bac_specs.ObjectID{
 					Type:     8,
 					Instance: 30185,
 				},
 				MaxApduLength:       1476,
-				SegmentationSupport: specs.SegmentationSupportBoth,
+				SegmentationSupport: bac_specs.SegmentationSupportBoth,
 				VendorID:            364,
 			},
 		},
@@ -116,12 +116,12 @@ func TestReadPropertyReq(t *testing.T) {
 		{
 			data: "0c00401fb91975",
 			rp: ReadProperty{
-				ObjectID: specs.ObjectID{
-					Type:     specs.AnalogOutput,
+				ObjectID: bac_specs.ObjectID{
+					Type:     bac_specs.AnalogOutput,
 					Instance: 8121,
 				},
-				PropertyID: specs.PropertyIdentifier{
-					Type: specs.Units,
+				PropertyID: bac_specs.PropertyIdentifier{
+					Type: bac_specs.Units,
 				},
 			},
 		},
@@ -144,12 +144,12 @@ func TestReadPropertyResp(t *testing.T) {
 		{
 			data: "0c00401fb919753e91623f",
 			rp: ReadProperty{
-				ObjectID: specs.ObjectID{
-					Type:     specs.AnalogOutput,
+				ObjectID: bac_specs.ObjectID{
+					Type:     bac_specs.AnalogOutput,
 					Instance: 8121,
 				},
-				PropertyID: specs.PropertyIdentifier{
-					Type: specs.Units,
+				PropertyID: bac_specs.PropertyIdentifier{
+					Type: bac_specs.Units,
 				},
 				Data: uint32(98),
 			},
@@ -174,14 +174,14 @@ func TestWritePropertyReq(t *testing.T) {
 		{
 			data: "0c0100000119553e91003f",
 			wp: WriteProperty{
-				ObjectID: specs.ObjectID{
-					Type:     specs.BinaryOutput,
+				ObjectID: bac_specs.ObjectID{
+					Type:     bac_specs.BinaryOutput,
 					Instance: 1,
 				},
-				Property: specs.PropertyIdentifier{
-					Type: specs.PresentValue,
+				Property: bac_specs.PropertyIdentifier{
+					Type: bac_specs.PresentValue,
 				},
-				PropertyValue: specs.PropertyValue{
+				PropertyValue: bac_specs.PropertyValue{
 					Type:  0x09,
 					Value: 0,
 				},

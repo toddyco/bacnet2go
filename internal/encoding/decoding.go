@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/toddyco/bacnet2go/specs"
+	"github.com/toddyco/bacnet2go/bac_specs"
 )
 
 // Decoder is the struct used to turn byte arrays to baetyl-bacnet types. All
@@ -103,7 +103,7 @@ func (d *Decoder) ContextValue(expectedTagID byte, val *uint32) error {
 // ContextObjectID read a (context)tag / value pair where the value
 // type is an unsigned int
 // If ErrorIncorrectTag is set, the internal buffer cursor is ready to read again the same tag.
-func (d *Decoder) ContextObjectID(expectedTagID byte, objectID *specs.ObjectID) {
+func (d *Decoder) ContextObjectID(expectedTagID byte, objectID *bac_specs.ObjectID) {
 	if d.err != nil {
 		return
 	}
@@ -128,7 +128,7 @@ func (d *Decoder) ContextObjectID(expectedTagID byte, objectID *specs.ObjectID) 
 	// Todo: check is tag size is ok
 	var val uint32
 	_ = binary.Read(d.buf, binary.BigEndian, &val)
-	*objectID = specs.ObjectIDFromUint32(val)
+	*objectID = bac_specs.ObjectIDFromUint32(val)
 }
 
 type AppDataTypeMismatch struct {
@@ -280,12 +280,12 @@ func (d *Decoder) AppData(v interface{}, prereadTag *tag) {
 			return
 		}
 		switch rv.Type() {
-		case reflect.TypeOf(specs.SegmentationSupport(0)):
-			rv.Set(reflect.ValueOf(specs.SegmentationSupport(val)))
-		case reflect.TypeOf(specs.ErrorClass(0)):
-			rv.Set(reflect.ValueOf(specs.ErrorClass(val)))
-		case reflect.TypeOf(specs.ErrorCode(0)):
-			rv.Set(reflect.ValueOf(specs.ErrorCode(val)))
+		case reflect.TypeOf(bac_specs.SegmentationSupport(0)):
+			rv.Set(reflect.ValueOf(bac_specs.SegmentationSupport(val)))
+		case reflect.TypeOf(bac_specs.ErrorClass(0)):
+			rv.Set(reflect.ValueOf(bac_specs.ErrorClass(val)))
+		case reflect.TypeOf(bac_specs.ErrorCode(0)):
+			rv.Set(reflect.ValueOf(bac_specs.ErrorCode(val)))
 		default:
 			if isEmptyInterface(rv) {
 				rv.Set(reflect.ValueOf(val))
@@ -295,14 +295,14 @@ func (d *Decoder) AppData(v interface{}, prereadTag *tag) {
 			}
 		}
 	case applicationTagObjectID:
-		var obj specs.ObjectID
+		var obj bac_specs.ObjectID
 		var val uint32
 		err := binary.Read(d.buf, binary.BigEndian, &val)
 		if err != nil {
 			d.err = fmt.Errorf("decodeAppData: read ObjectID: %w", err)
 			return
 		}
-		obj = specs.ObjectIDFromUint32(val)
+		obj = bac_specs.ObjectIDFromUint32(val)
 		if rv.Type() != reflect.TypeOf(obj) && !isEmptyInterface(rv) {
 			d.err = AppDataTypeMismatch{wanted: "ObjectID", got: rv.Type()}
 			return

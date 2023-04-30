@@ -1,5 +1,5 @@
 // Package baetyl-bacnet provides various types to represent Bacnet related concepts
-package specs
+package bac_specs
 
 import (
 	"bytes"

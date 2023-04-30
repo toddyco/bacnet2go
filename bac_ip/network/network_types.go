@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/toddyco/bacnet2go/bacnet_ip/const"
-	"github.com/toddyco/bacnet2go/bacnet_ip/services"
+	"github.com/toddyco/bacnet2go/bac_ip/const"
+	"github.com/toddyco/bacnet2go/bac_ip/services"
 
-	"github.com/toddyco/bacnet2go/specs"
+	"github.com/toddyco/bacnet2go/bac_specs"
 )
 
 type Version byte
@@ -31,8 +31,8 @@ type NPDU struct {
 	ExpectingReply        bool
 	Priority              NPDUPriority
 
-	Destination *specs.Address
-	Source      *specs.Address
+	Destination *bac_specs.Address
+	Source      *bac_specs.Address
 	HopCount    byte
 	// The two are only significant if IsNetworkLayerMessage is true
 	NetworkMessageType byte
@@ -118,7 +118,7 @@ func (npdu *NPDU) UnmarshalBinary(data []byte) error {
 	npdu.Priority = NPDUPriority(control & 0x3)
 
 	if control&(1<<5) > 0 {
-		npdu.Destination = &specs.Address{}
+		npdu.Destination = &bac_specs.Address{}
 		err := binary.Read(buf, binary.BigEndian, &npdu.Destination.Net)
 		if err != nil {
 			return fmt.Errorf("read NPDU dest Address.Net: %w", err)
@@ -136,7 +136,7 @@ func (npdu *NPDU) UnmarshalBinary(data []byte) error {
 	}
 
 	if control&(1<<3) > 0 {
-		npdu.Source = &specs.Address{}
+		npdu.Source = &bac_specs.Address{}
 		err := binary.Read(buf, binary.BigEndian, &npdu.Source.Net)
 		if err != nil {
 			return fmt.Errorf("read NPDU src Address.Net: %w", err)

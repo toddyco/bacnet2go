@@ -6,7 +6,7 @@ import (
     "testing"
 
     "github.com/matryer/is"
-	"github.com/toddyco/bacnet2go/specs"
+	"github.com/toddyco/bacnet2go/bac_specs"
 )
 
 func TestValidAppData(t *testing.T) {
@@ -17,7 +17,7 @@ func TestValidAppData(t *testing.T) {
 	}{
 		{
 			data: "c4020075e9",
-			expected: specs.ObjectID{
+			expected: bac_specs.ObjectID{
 				Type:     8,
 				Instance: 30185,
 			},
@@ -28,7 +28,7 @@ func TestValidAppData(t *testing.T) {
 		},
 		{
 			data:        "9100",
-			expected:    specs.SegmentationSupportBoth,
+			expected:    bac_specs.SegmentationSupportBoth,
 			expectedBis: uint32(0),
 		},
 		{
@@ -56,8 +56,8 @@ func TestValidAppData(t *testing.T) {
 			decoder := NewDecoder(b)
 			//Ensure that it work when passed the concrete type
 			switch tc.expected.(type) {
-			case specs.ObjectID:
-				x := specs.ObjectID{}
+			case bac_specs.ObjectID:
+				x := bac_specs.ObjectID{}
 				decoder.AppData(&x, nil)
 				is.NoErr(decoder.err)
 				is.Equal(x, tc.expected)
@@ -66,8 +66,8 @@ func TestValidAppData(t *testing.T) {
 				decoder.AppData(&x, nil)
 				is.NoErr(decoder.err)
 				is.Equal(x, tc.expected)
-			case specs.SegmentationSupport:
-				var x specs.SegmentationSupport
+			case bac_specs.SegmentationSupport:
+				var x bac_specs.SegmentationSupport
 				decoder.AppData(&x, nil)
 				is.NoErr(decoder.err)
 				is.Equal(x, tc.expected)

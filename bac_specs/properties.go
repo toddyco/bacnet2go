@@ -1,4 +1,4 @@
-package specs
+package bac_specs
 
 // PropertyType is the type of an object property
 type PropertyType uint32

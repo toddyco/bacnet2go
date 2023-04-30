@@ -1,8 +1,8 @@
-package bacnet_ip
+package bac_ip
 
 import (
 	"context"
-	"github.com/toddyco/bacnet2go/bacnet_ip/network"
+	"github.com/toddyco/bacnet2go/bac_ip/network"
 	"sync"
 )
 

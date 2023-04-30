@@ -3,13 +3,13 @@ package services
 import (
 	"fmt"
 
+	"github.com/toddyco/bacnet2go/bac_specs"
 	"github.com/toddyco/bacnet2go/internal/encoding"
-	"github.com/toddyco/bacnet2go/specs"
 )
 
 type APDUError struct {
-	Class specs.ErrorClass
-	Code  specs.ErrorCode
+	Class bac_specs.ErrorClass
+	Code  bac_specs.ErrorCode
 }
 
 func (e APDUError) Error() string {

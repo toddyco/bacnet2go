@@ -6,15 +6,15 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/toddyco/bacnet2go/bacnet_ip"
-	"github.com/toddyco/bacnet2go/bacnet_ip/const"
-	"github.com/toddyco/bacnet2go/bacnet_ip/network"
-	"github.com/toddyco/bacnet2go/bacnet_ip/services"
+	"github.com/toddyco/bacnet2go/bac_ip"
+	"github.com/toddyco/bacnet2go/bac_ip/const"
+	"github.com/toddyco/bacnet2go/bac_ip/network"
+	"github.com/toddyco/bacnet2go/bac_ip/services"
 	"net"
 	"sync"
 	"time"
 
-	"github.com/toddyco/bacnet2go/specs"
+	"github.com/toddyco/bacnet2go/bac_specs"
 )
 
 type Client struct {
@@ -24,7 +24,7 @@ type Client struct {
 	udpPort          int
 	udp              *net.UDPConn
 	subscriptions    *Subscriptions
-	transactions     *bacnet_ip.Transactions
+	transactions     *bac_ip.Transactions
 	Logger           Logger
 
 	ctx        context.Context
@@ -55,7 +55,7 @@ func NewClient(netInterface string, port int) (*Client, error) {
 
 	c := &Client{
 		subscriptions: &Subscriptions{},
-		transactions:  bacnet_ip.NewTransactions(),
+		transactions:  bac_ip.NewTransactions(),
 		Logger:        NoOpLogger{},
 		ctx:           ctx,
 		cancelFunc:    cancel,
@@ -123,7 +123,7 @@ func NewClientByIP(ip string, port int) (*Client, error) {
 
 	c := &Client{
 		subscriptions: &Subscriptions{},
-		transactions:  bacnet_ip.NewTransactions(),
+		transactions:  bac_ip.NewTransactions(),
 		Logger:        NoOpLogger{},
 		ctx:           ctx,
 		cancelFunc:    cancel,
@@ -273,7 +273,7 @@ func (c *Client) IAm() error {
 		IsNetworkLayerMessage: false,
 		ExpectingReply:        false,
 		Priority:              network.Normal,
-		Destination: &specs.Address{
+		Destination: &bac_specs.Address{
 			Net: uint16(0xffff),
 		},
 		Source: nil,
@@ -281,8 +281,8 @@ func (c *Client) IAm() error {
 			DataType:    network.UnconfirmedServiceRequest,
 			ServiceType: network.ServiceUnconfirmedIAm,
 			Payload: &services.IAm{
-				ObjectID: specs.ObjectID{
-					Type:     specs.BacnetDevice,
+				ObjectID: bac_specs.ObjectID{
+					Type:     bac_specs.BacnetDevice,
 					Instance: 99999,
 				},
 				MaxApduLength:       0,
@@ -298,13 +298,13 @@ func (c *Client) IAm() error {
 	return err
 }
 
-func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]specs.Device, error) {
+func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]bac_specs.Device, error) {
 	npdu := network.NPDU{
 		Version:               network.Version1,
 		IsNetworkLayerMessage: false,
 		ExpectingReply:        false,
 		Priority:              network.Normal,
-		Destination: &specs.Address{
+		Destination: &bac_specs.Address{
 			Net: uint16(0xffff),
 		},
 		Source: nil,
@@ -343,14 +343,14 @@ func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]specs.Devi
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
 	// Use a set to deduplicate results
-	set := map[services.IAm]specs.Address{}
+	set := map[services.IAm]bac_specs.Address{}
 
 	for {
 		select {
 		case <-timer.C:
-			result := []specs.Device{}
+			result := []bac_specs.Device{}
 			for iam, addr := range set {
-				result = append(result, specs.Device{
+				result = append(result, bac_specs.Device{
 					ID:           iam.ObjectID,
 					MaxApdu:      iam.MaxApduLength,
 					Segmentation: iam.SegmentationSupport,
@@ -375,9 +375,9 @@ func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]specs.Devi
 					// the IAM response is in broadcast mode, we might
 					// receive an answer triggered by an other whois
 					if data.High != nil && data.Low != nil {
-						if iam.ObjectID.Instance >= specs.ObjectInstance(*data.Low) &&
-							iam.ObjectID.Instance <= specs.ObjectInstance(*data.High) {
-							addr := specs.AddressFromUDP(r.src)
+						if iam.ObjectID.Instance >= bac_specs.ObjectInstance(*data.Low) &&
+							iam.ObjectID.Instance <= bac_specs.ObjectInstance(*data.High) {
+							addr := bac_specs.AddressFromUDP(r.src)
 							if r.bvlc.NPDU.Source != nil {
 								addr.Net = r.bvlc.NPDU.Source.Net
 								addr.Adr = r.bvlc.NPDU.Source.Adr
@@ -385,7 +385,7 @@ func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]specs.Devi
 							set[*iam] = *addr
 						}
 					} else {
-						addr := specs.AddressFromUDP(r.src)
+						addr := bac_specs.AddressFromUDP(r.src)
 						if r.bvlc.NPDU.Source != nil {
 							addr.Net = r.bvlc.NPDU.Source.Net
 							addr.Adr = r.bvlc.NPDU.Source.Adr
@@ -400,7 +400,7 @@ func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]specs.Devi
 }
 
 // ReadProperty reads a single property from an object
-func (c *Client) ReadProperty(ctx context.Context, device specs.Device, readProp services.ReadProperty) (interface{}, error) {
+func (c *Client) ReadProperty(ctx context.Context, device bac_specs.Device, readProp services.ReadProperty) (interface{}, error) {
 	invokeID := c.transactions.GetID()
 	defer c.transactions.FreeID(invokeID)
 
@@ -410,7 +410,7 @@ func (c *Client) ReadProperty(ctx context.Context, device specs.Device, readProp
 		ExpectingReply:        true,
 		Priority:              network.Normal,
 		Destination:           &device.Addr,
-		Source: specs.AddressFromUDP(net.UDPAddr{
+		Source: bac_specs.AddressFromUDP(net.UDPAddr{
 			IP:   c.ipAddress,
 			Port: c.udpPort,
 		}),
@@ -450,7 +450,7 @@ func (c *Client) ReadProperty(ctx context.Context, device specs.Device, readProp
 }
 
 // ReadPropertyMultiple reads multiple properties from one or more objects
-func (c *Client) ReadPropertyMultiple(ctx context.Context, device specs.Device, readProp services.ReadPropertyMultiple) (interface{}, error) {
+func (c *Client) ReadPropertyMultiple(ctx context.Context, device bac_specs.Device, readProp services.ReadPropertyMultiple) (interface{}, error) {
 	invokeID := c.transactions.GetID()
 	defer c.transactions.FreeID(invokeID)
 
@@ -460,7 +460,7 @@ func (c *Client) ReadPropertyMultiple(ctx context.Context, device specs.Device, 
 		ExpectingReply:        true,
 		Priority:              network.Normal,
 		Destination:           &device.Addr,
-		Source: specs.AddressFromUDP(net.UDPAddr{
+		Source: bac_specs.AddressFromUDP(net.UDPAddr{
 			IP:   c.ipAddress,
 			Port: c.udpPort,
 		}),
@@ -492,7 +492,7 @@ func (c *Client) ReadPropertyMultiple(ctx context.Context, device specs.Device, 
 
 		if apdu.DataType.IsType(network.Abort) {
 			if abort, ok := apdu.Payload.(*services.APDUAbort); ok {
-				if abort.Reason == specs.SegmentationNotSupportedAbortReason {
+				if abort.Reason == bac_specs.SegmentationNotSupportedAbortReason {
 					return nil, _const.ErrSegmentationNotSupported
 				}
 			}
@@ -510,7 +510,7 @@ func (c *Client) ReadPropertyMultiple(ctx context.Context, device specs.Device, 
 }
 
 // WriteProperty writes a value to a property
-func (c *Client) WriteProperty(ctx context.Context, device specs.Device, writeProp services.WriteProperty) error {
+func (c *Client) WriteProperty(ctx context.Context, device bac_specs.Device, writeProp services.WriteProperty) error {
 	invokeID := c.transactions.GetID()
 	defer c.transactions.FreeID(invokeID)
 
@@ -520,7 +520,7 @@ func (c *Client) WriteProperty(ctx context.Context, device specs.Device, writePr
 		ExpectingReply:        true,
 		Priority:              network.Normal,
 		Destination:           &device.Addr,
-		Source: specs.AddressFromUDP(net.UDPAddr{
+		Source: bac_specs.AddressFromUDP(net.UDPAddr{
 			IP:   c.ipAddress,
 			Port: c.udpPort,
 		}),
@@ -574,7 +574,7 @@ func (c *Client) send(npdu network.NPDU) (int, error) {
 		return 0, fmt.Errorf("destination baetyl-bacnet address should be not nil to send unicast")
 	}
 
-	addr := specs.UDPFromAddress(*npdu.Destination)
+	addr := bac_specs.UDPFromAddress(*npdu.Destination)
 
 	return c.udp.WriteToUDP(bytes, &addr)
 

@@ -2,8 +2,8 @@ package services
 
 import (
 	"fmt"
+	"github.com/toddyco/bacnet2go/bac_specs"
 	"github.com/toddyco/bacnet2go/internal/encoding"
-	"github.com/toddyco/bacnet2go/specs"
 )
 
 type WhoIs struct {
@@ -13,8 +13,8 @@ type WhoIs struct {
 func (w WhoIs) MarshalBinary() ([]byte, error) {
 	encoder := encoding.NewEncoder()
 	if w.Low != nil && w.High != nil {
-		if *w.Low > specs.MaxInstance || *w.High > specs.MaxInstance {
-			return nil, fmt.Errorf("invalid WhoIs range: [%d, %d]: max value is %d", *w.Low, *w.High, specs.MaxInstance)
+		if *w.Low > bac_specs.MaxInstance || *w.High > bac_specs.MaxInstance {
+			return nil, fmt.Errorf("invalid WhoIs range: [%d, %d]: max value is %d", *w.Low, *w.High, bac_specs.MaxInstance)
 		}
 		if *w.Low > *w.High {
 			return nil, fmt.Errorf("invalid WhoIs range: [%d, %d]: low limit is higher than high limit", *w.Low, *w.High)

@@ -1,4 +1,4 @@
-package specs
+package bac_specs
 
 type Unit uint16
 
