@@ -398,7 +398,10 @@ func (c *Client) WhoIs(data services.WhoIs, timeout time.Duration) ([]specs.Devi
 }
 
 // ReadProperty reads a single property from an object
-func (c *Client) ReadProperty(ctx context.Context, device specs.Device, readProp services.ReadProperty) (*services.ReadProperty, error) {
+func (c *Client) ReadProperty(timeout time.Duration, device specs.Device, readProp services.ReadProperty) (*services.ReadProperty, error) {
+	ctx, cancelFunc := context.WithTimeout(c.ctx, timeout)
+	defer cancelFunc()
+
 	invokeID := c.transactions.GetID()
 	defer c.transactions.FreeID(invokeID)
 
@@ -448,7 +451,10 @@ func (c *Client) ReadProperty(ctx context.Context, device specs.Device, readProp
 }
 
 // ReadPropertyMultiple reads multiple properties from one or more objects
-func (c *Client) ReadPropertyMultiple(ctx context.Context, device specs.Device, readProp services.ReadPropertyMultiple) (*services.ReadPropertyMultiple, error) {
+func (c *Client) ReadPropertyMultiple(timeout time.Duration, device specs.Device, readProp services.ReadPropertyMultiple) (*services.ReadPropertyMultiple, error) {
+	ctx, cancelFunc := context.WithTimeout(c.ctx, timeout)
+	defer cancelFunc()
+
 	invokeID := c.transactions.GetID()
 	defer c.transactions.FreeID(invokeID)
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/toddyco/bacnet2go/client"
@@ -50,7 +49,7 @@ func main() {
 		Adr: []byte{},
 	}
 
-	GetPointList(c, addr, 700900)
+	//GetPointList(c, addr, 700900)
 
 	for range make([]int, 50) {
 		//GetPresentValue(c, addr, 700900, bacnet.ObjectID{
@@ -140,42 +139,46 @@ func main() {
 			//}
 
 			pts := []specs.ObjectID{
-				//specs.ObjectID{
-				//	Type:     specs.AnalogInput,
-				//	Instance: specs.ObjectInstance(1),
-				//},
-				//specs.ObjectID{
-				//	Type:     specs.MultiStateValue,
-				//	Instance: specs.ObjectInstance(76),
-				//},
-				//specs.ObjectID{
-				//	Type:     specs.AnalogValue,
-				//	Instance: specs.ObjectInstance(176),
-				//},
-				//specs.ObjectID{
-				//	Type:     specs.AnalogValue,
-				//	Instance: specs.ObjectInstance(177),
-				//},
-				//specs.ObjectID{
-				//	Type:     specs.AnalogValue,
-				//	Instance: specs.ObjectInstance(178),
-				//},
-				//specs.ObjectID{
-				//	Type:     specs.AnalogValue,
-				//	Instance: specs.ObjectInstance(179),
-				//},
-				//specs.ObjectID{
-				//	Type:     specs.AnalogValue,
-				//	Instance: specs.ObjectInstance(180),
-				//},
-				//specs.ObjectID{
-				//	Type:     specs.AnalogValue,
-				//	Instance: specs.ObjectInstance(181),
-				//},
-				//specs.ObjectID{
-				//	Type:     specs.AnalogValue,
-				//	Instance: specs.ObjectInstance(182),
-				//},
+				specs.ObjectID{
+					Type:     specs.BinaryValue,
+					Instance: specs.ObjectInstance(122),
+				},
+				specs.ObjectID{
+					Type:     specs.BinaryValue,
+					Instance: specs.ObjectInstance(117),
+				},
+				specs.ObjectID{
+					Type:     specs.MultiStateValue,
+					Instance: specs.ObjectInstance(76),
+				},
+				specs.ObjectID{
+					Type:     specs.AnalogValue,
+					Instance: specs.ObjectInstance(176),
+				},
+				specs.ObjectID{
+					Type:     specs.AnalogValue,
+					Instance: specs.ObjectInstance(177),
+				},
+				specs.ObjectID{
+					Type:     specs.AnalogValue,
+					Instance: specs.ObjectInstance(178),
+				},
+				specs.ObjectID{
+					Type:     specs.AnalogValue,
+					Instance: specs.ObjectInstance(179),
+				},
+				specs.ObjectID{
+					Type:     specs.AnalogValue,
+					Instance: specs.ObjectInstance(180),
+				},
+				specs.ObjectID{
+					Type:     specs.AnalogValue,
+					Instance: specs.ObjectInstance(181),
+				},
+				specs.ObjectID{
+					Type:     specs.AnalogValue,
+					Instance: specs.ObjectInstance(182),
+				},
 				specs.ObjectID{
 					Type:     specs.AnalogInput,
 					Instance: specs.ObjectInstance(183),
@@ -230,15 +233,12 @@ func main() {
 }
 
 func GetPresentValue(c *client.Client, addr specs.Address, instanceID int, objectID specs.ObjectID) {
-	ctx, cancel := context.WithTimeout(context.Background(), 800000*time.Second)
-	defer cancel()
-
 	// Addr := bacnet.AddressFromUDP(net.UDPAddr{
 	//    IP:   net.ParseIP(ipAddr),
 	//    Port: bacip.DefaultUDPPort,
 	//})
 
-	val, err := c.ReadProperty(ctx, makeDevice(addr, instanceID), services2.ReadProperty{
+	val, err := c.ReadProperty(3*time.Second, makeDevice(addr, instanceID), services2.ReadProperty{
 		ObjectID: objectID,
 		PropertyID: specs.PropertyIdentifier{
 			Type: specs.PresentValue,
@@ -251,15 +251,12 @@ func GetPresentValue(c *client.Client, addr specs.Address, instanceID int, objec
 }
 
 func GetPointList(c *client.Client, addr specs.Address, instanceID int) {
-	ctx, cancel := context.WithTimeout(context.Background(), 800000*time.Second)
-	defer cancel()
-
 	// Addr := bacnet.AddressFromUDP(net.UDPAddr{
 	//    IP:   net.ParseIP(ipAddr),
 	//    Port: bacip.DefaultUDPPort,
 	//})
 
-	val, err := c.ReadProperty(ctx, makeDevice(addr, instanceID), services2.ReadProperty{
+	val, err := c.ReadProperty(3*time.Second, makeDevice(addr, instanceID), services2.ReadProperty{
 		ObjectID: specs.ObjectID{
 			Type:     specs.BacnetDevice,
 			Instance: specs.ObjectInstance(instanceID),
@@ -280,15 +277,12 @@ func GetPointList(c *client.Client, addr specs.Address, instanceID int) {
 }
 
 func GetPointDetails(c *client.Client, addr specs.Address, instanceID int, objectIDs []specs.ObjectID) {
-	ctx, cancel := context.WithTimeout(context.Background(), 800000*time.Second)
-	defer cancel()
-
-	val, err := c.ReadPropertyMultiple(ctx, makeDevice(addr, instanceID), services2.ReadPropertyMultiple{
+	val, err := c.ReadPropertyMultiple(3*time.Second, makeDevice(addr, instanceID), services2.ReadPropertyMultiple{
 		ObjectIDs: objectIDs,
 		PropertyIDs: [][]specs.PropertyIdentifier{{
-			specs.PropertyIdentifier{
-				Type: specs.ObjectIdentifier,
-			},
+			//specs.PropertyIdentifier{
+			//	Type: specs.ObjectIdentifier,
+			//},
 			specs.PropertyIdentifier{
 				Type: specs.PresentValue,
 			},
