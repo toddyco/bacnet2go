@@ -21,7 +21,7 @@ func main() {
 	t := time.Now().UnixMilli()
 	fmt.Println(t)
 
-	c, err := client.NewClientByIP("10.1.1.147", 0xbac1)
+	c, err := client.NewClientByIP("10.1.1.147", 0xbac0)
 
 	if err != nil {
 		fmt.Println(err)
